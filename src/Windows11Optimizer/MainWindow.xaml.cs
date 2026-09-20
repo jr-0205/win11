@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Security.Principal;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Windows11Optimizer.Models;
 using Windows11Optimizer.Profiles;
@@ -199,6 +201,129 @@ public partial class MainWindow : Window
                 "No se pudo actualizar la lista de inicio.",
                 ActivityKind.Error);
         }
+    }
+
+    private void StartupGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        var row = FindVisualParent<DataGridRow>(e.OriginalSource as DependencyObject);
+        if (row is null)
+            return;
+
+        StartupGrid.SelectedItem = row.Item;
+        row.Focus();
+    }
+
+    private void OpenStartupEntryLocation_Click(object sender, RoutedEventArgs e)
+    {
+        if (StartupGrid.SelectedItem is not StartupEntry entry)
+        {
+            ShowToast(
+                "Selecciona primero una entrada de inicio.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        var candidate = GetStartupEntryPath(entry);
+        if (string.IsNullOrWhiteSpace(candidate))
+        {
+            ShowToast(
+                "Esta entrada no tiene una ubicación de archivo que podamos abrir.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        try
+        {
+            candidate = Environment.ExpandEnvironmentVariables(candidate);
+
+            if (File.Exists(candidate))
+            {
+                Process.Start(new ProcessStartInfo(
+                    "explorer.exe",
+                    $"/select,\"{candidate}\"")
+                {
+                    UseShellExecute = true
+                });
+
+                Log($"Ubicación de inicio abierta: {entry.Name} | {candidate}");
+                return;
+            }
+
+            if (Directory.Exists(candidate))
+            {
+                Process.Start(new ProcessStartInfo(candidate)
+                {
+                    UseShellExecute = true
+                });
+
+                Log($"Directorio de inicio abierto: {entry.Name} | {candidate}");
+                return;
+            }
+
+            var parent = Path.GetDirectoryName(candidate);
+            while (!string.IsNullOrWhiteSpace(parent) && !Directory.Exists(parent))
+            {
+                var next = Path.GetDirectoryName(parent);
+                if (string.Equals(next, parent, StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                parent = next;
+            }
+
+            if (!string.IsNullOrWhiteSpace(parent) && Directory.Exists(parent))
+            {
+                Process.Start(new ProcessStartInfo(parent)
+                {
+                    UseShellExecute = true
+                });
+
+                ShowToast(
+                    "La carpeta exacta ya no existe. Abrimos la ubicación disponible más cercana.",
+                    ActivityKind.Info);
+
+                Log($"Ubicación aproximada abierta para entrada huérfana: {entry.Name} | {parent}");
+                return;
+            }
+
+            ShowToast(
+                "La ubicación de esta entrada ya no existe en el equipo.",
+                ActivityKind.Warning);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error abriendo ubicación de inicio: {ex.Message}");
+
+            ShowToast(
+                "No se pudo abrir la ubicación de esta entrada.",
+                ActivityKind.Error);
+        }
+    }
+
+    private static string GetStartupEntryPath(StartupEntry entry)
+    {
+        if (!string.IsNullOrWhiteSpace(entry.StartupFilePath))
+            return entry.StartupFilePath;
+
+        if (!string.IsNullOrWhiteSpace(entry.TargetPath))
+            return entry.TargetPath;
+
+        return "";
+    }
+
+    private static T? FindVisualParent<T>(DependencyObject? child)
+        where T : DependencyObject
+    {
+        var current = child;
+
+        while (current is not null)
+        {
+            if (current is T typed)
+                return typed;
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
     }
 
     private void RemoveOrphanedStartup_Click(object sender, RoutedEventArgs e)
