@@ -7,6 +7,9 @@ public sealed class VirtualizationModeState
     public bool HypervisorPresentNow { get; init; }
     public bool PendingRestart { get; init; }
 
+    public int? VbsStatus { get; init; }
+    public bool? MemoryIntegrityRunning { get; init; }
+
     public bool IsConfiguredForVmware =>
         HypervisorLaunchType.Equals("Off", StringComparison.OrdinalIgnoreCase);
 
@@ -19,6 +22,21 @@ public sealed class VirtualizationModeState
         HypervisorPresentNow
             ? "Hipervisor de Windows activo"
             : "Hipervisor de Windows no activo";
+
+    public string VbsLabel => VbsStatus switch
+    {
+        2 => "VBS en ejecución",
+        1 => "VBS configurado, no activo",
+        0 => "VBS no habilitado",
+        _ => "VBS no disponible"
+    };
+
+    public string MemoryIntegrityLabel => MemoryIntegrityRunning switch
+    {
+        true => "Integridad de memoria activa",
+        false => "Integridad de memoria no activa",
+        null => "Integridad de memoria no disponible"
+    };
 
     public string RestartLabel =>
         PendingRestart
