@@ -102,18 +102,6 @@ public partial class MainWindow : Window
         RefreshFocusStatus();
         UpdateAiAvailability();
 
-        if (_agent.IsAvailable)
-        {
-            try
-            {
-                _agent.EnsureStartup();
-            }
-            catch (Exception ex)
-            {
-                Log($"No se pudo registrar el agente de inicio: {ex.Message}");
-            }
-        }
-
         _timer.Start();
         _ = LoadWinUtilCatalogAsync(forceRefresh: false, showFeedback: false);
 
