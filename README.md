@@ -6,7 +6,7 @@ La prioridad del proyecto es la reversibilidad: antes de modificar servicios adm
 
 ## Estado
 
-**v0.1 – prototipo funcional**
+**v0.2**
 
 ### Incluido
 
@@ -30,6 +30,31 @@ La prioridad del proyecto es la reversibilidad: antes de modificar servicios adm
 - Acceso directo a la pantalla oficial de Apps de inicio.
 - Exportación de diagnóstico a TXT.
 - Registro de operaciones dentro de la aplicación.
+- Catálogo de referencia de Chris Titus Tech WinUtil.
+- Generador de EXE portable e instalador.
+
+## Integración con WinUtil
+
+Windows11Optimizer **no ejecuta**:
+
+```powershell
+irm https://christitus.com/win | iex
+```
+
+La integración de v0.2 es deliberadamente de **solo lectura**:
+
+1. Usa WinUtil estable `26.08.19`.
+2. Fija el commit `086aecf4b7d165f9fd1822049435c418a48e7cba`.
+3. Descarga únicamente:
+   - `config/tweaks.json`
+   - `config/preset.json`
+4. Guarda una caché en `%ProgramData%\Windows11Optimizer\winutil\26.08.19`.
+5. Muestra nombre, descripción, presets, tipo de acciones y nivel de revisión.
+6. No ejecuta `InvokeScript`, no cambia el Registro y no aplica servicios definidos por WinUtil.
+
+Esto permite investigar y comparar reglas de WinUtil sin convertir la aplicación en un lanzador de código remoto.
+
+Los avisos y la licencia MIT de WinUtil se conservan en `THIRD-PARTY-NOTICES.md`.
 
 ## Qué NO hace el perfil seguro
 
@@ -49,30 +74,86 @@ No desactiva:
 
 El objetivo no es conseguir el menor número posible de procesos a cualquier costo. El objetivo es reducir actividad innecesaria manteniendo las funciones útiles del equipo.
 
-## Requisitos
+## Requisitos para desarrollar
 
 - Windows 11 x64
-- .NET 8 Desktop Runtime, o publicar como `self-contained`
-- Permisos de administrador para modificar servicios y tareas
-- Visual Studio 2022 o .NET 8 SDK para compilar
+- .NET 8 SDK
+- VS Code, Visual Studio 2022 o terminal
+- Permisos de administrador al ejecutar la aplicación
 
-## Compilar
+## Generar el EXE desde VS Code
+
+Abre una terminal PowerShell en la carpeta raíz del repositorio.
+
+### Opción recomendada: EXE portable
+
+```powershell
+.\exe-generated.ps1 -Clean -PortableOnly
+```
+
+Resultado:
+
+```text
+artifacts\portable\Windows11Optimizer.exe
+```
+
+El EXE es `self-contained`: el equipo donde se ejecute no necesita tener instalado .NET 8 Desktop Runtime.
+
+### Generar instalador
+
+El instalador usa **Inno Setup 6**.
+
+Si ya tienes Inno Setup:
+
+```powershell
+.\exe-generated.ps1 -Clean
+```
+
+Resultado:
+
+```text
+artifacts\installer\Windows11Optimizer-Setup-x64.exe
+```
+
+Si no tienes Inno Setup y quieres que el script lo instale mediante WinGet:
+
+```powershell
+.\exe-generated.ps1 -Clean -InstallInno
+```
+
+También puedes hacer doble clic en:
+
+```text
+exe-generated.cmd
+```
+
+El script nunca instala Inno Setup por sí solo. Solo lo hace cuando se proporciona explícitamente `-InstallInno`.
+
+## Compilar manualmente
 
 ```powershell
 dotnet restore .\Windows11Optimizer.sln
 dotnet build .\Windows11Optimizer.sln -c Release
 ```
 
-### Publicar como ejecutable para Windows x64
+Publicación manual:
 
 ```powershell
-dotnet publish .\src\Windows11Optimizer\Windows11Optimizer.csproj `
-  -c Release `
-  -r win-x64 `
-  --self-contained true `
-  -p:PublishSingleFile=true `
-  -p:IncludeNativeLibrariesForSelfExtract=true `
-  -o .\publish
+dotnet publish .\src\Windows11Optimizer\Windows11Optimizer.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\artifacts\publish
+```
+
+## GitHub Actions
+
+Cada push a `main` ejecuta el mismo generador:
+
+```powershell
+.\exe-generated.ps1 -Clean -PortableOnly
+```
+
+Si compila correctamente, GitHub Actions publica el artifact:
+
+```text
+Windows11Optimizer-v0.2-win-x64
 ```
 
 ## Funcionamiento del modo bajo demanda
@@ -124,12 +205,16 @@ La carpeta `tools/` contiene los prototipos PowerShell usados durante el desarro
 - [ ] Reglas para Docker Desktop y otras herramientas de desarrollo.
 - [ ] Medición de disco y tiempo de arranque.
 - [ ] Detección de dependencias antes de modificar un servicio.
-- [ ] Empaquetado MSIX / instalador.
+- [ ] Revisión individual de reglas WinUtil antes de portar cualquier tweak a implementación nativa.
 
 ## Seguridad
 
 No agregues servicios de Windows al perfil de desactivación sin comprobar dependencias y efectos. Un nombre de servicio desconocido debe tratarse como **conservar** hasta investigarlo.
 
-## Licencia
+Los datos de WinUtil importados son referencia; el nivel mostrado por la interfaz **no es una garantía de seguridad**.
 
-MIT.
+## Licencias
+
+Windows11Optimizer: MIT.
+
+WinUtil: MIT, Copyright (c) 2022 CT Tech Group LLC. Consulta `THIRD-PARTY-NOTICES.md`.
