@@ -14,7 +14,7 @@ internal sealed class AgentSettingsForm : Form
     {
         _apply = apply;
 
-        Text = "Agente de Windows11Optimizer";
+        Text = "Agente · Windows11Optimizer";
         Width = 520;
         Height = 300;
         StartPosition = FormStartPosition.CenterScreen;
@@ -78,6 +78,7 @@ internal sealed class AgentSettingsForm : Form
         table.Controls.Add(save, 0, 4);
 
         Controls.Add(table);
+        AgentVisualTheme.Apply(this);
     }
 
     private void SaveSettings()
