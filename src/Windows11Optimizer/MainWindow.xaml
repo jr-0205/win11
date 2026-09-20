@@ -233,11 +233,11 @@
                             <TextBlock Margin="0,4,0,0"
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource MutedForegroundBrush}"
-                                       Text="Usa el modo normal para las funciones de virtualización de Windows. Si VMware presenta conflictos o rendimiento reducido, puedes preparar el equipo para usar VMware directamente. El cambio se aplica al reiniciar."/>
+                                       Text="La app detecta automáticamente el estado actual y solo recomendará reiniciar cuando exista un cambio pendiente que realmente lo necesite."/>
                         </StackPanel>
                     </Border>
 
-                    <UniformGrid Grid.Row="1" Columns="3" Margin="0,0,0,8">
+                    <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,8">
                         <Border Margin="4"
                                 Padding="12"
                                 CornerRadius="8"
@@ -245,7 +245,7 @@
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1">
                             <StackPanel>
-                                <TextBlock Text="Modo preparado para el próximo reinicio"
+                                <TextBlock Text="Modo configurado"
                                            Foreground="{DynamicResource MutedForegroundBrush}"/>
                                 <TextBlock x:Name="VirtualizationBootModeText"
                                            Text="Consultando…"
@@ -263,13 +263,32 @@
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1">
                             <StackPanel>
-                                <TextBlock Text="Estado actual"
+                                <TextBlock Text="Estado de esta sesión"
                                            Foreground="{DynamicResource MutedForegroundBrush}"/>
                                 <TextBlock x:Name="VirtualizationCurrentText"
                                            Text="Consultando…"
                                            Margin="0,4,0,0"
                                            FontSize="16"
-                                           FontWeight="SemiBold"/>
+                                           FontWeight="SemiBold"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Margin="4"
+                                Padding="12"
+                                CornerRadius="8"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="Reinicio"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"/>
+                                <TextBlock x:Name="VirtualizationRestartText"
+                                           Text="Consultando…"
+                                           Margin="0,4,0,0"
+                                           FontSize="16"
+                                           FontWeight="SemiBold"
+                                           TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
 
@@ -298,20 +317,19 @@
                             Background="{DynamicResource SurfaceAltBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1">
-                        <TextBlock TextWrapping="Wrap">
-                            <Run FontWeight="SemiBold" Text="Importante: "/>
-                            <Run Text="el cambio solo se aplica después de reiniciar. El modo VMware puede desactivar temporalmente funciones de virtualización de Windows. Puedes volver al modo normal cuando quieras."/>
-                        </TextBlock>
+                        <TextBlock x:Name="VirtualizationHelpText"
+                                   TextWrapping="Wrap"
+                                   Text="Comprobando el estado de virtualización…"/>
                     </Border>
 
                     <StackPanel Grid.Row="3">
                         <WrapPanel>
                             <Button Content="Usar modo normal"
                                     Click="SetVirtualizationNormal_Click"
-                                    ToolTip="Configura hypervisorlaunchtype=auto para el próximo arranque."/>
+                                    ToolTip="Permite que Windows cargue su hipervisor cuando sea necesario."/>
                             <Button Content="Preparar para VMware"
                                     Click="SetVirtualizationVmware_Click"
-                                    ToolTip="Configura hypervisorlaunchtype=off para el próximo arranque."/>
+                                    ToolTip="Evita que el hipervisor de Windows se cargue en el próximo arranque."/>
                             <Button Content="Volver al estado original"
                                     Click="RestoreVirtualization_Click"/>
                             <Button Content="Actualizar estado"
@@ -319,12 +337,15 @@
                         </WrapPanel>
 
                         <WrapPanel Margin="0,8,0,0">
-                            <Button Content="Reiniciar ahora"
-                                    Click="RestartForVirtualization_Click"/>
-                            <TextBlock VerticalAlignment="Center"
+                            <Button x:Name="RestartForVirtualizationButton"
+                                    Content="Reiniciar para aplicar"
+                                    Click="RestartForVirtualization_Click"
+                                    IsEnabled="False"/>
+                            <TextBlock x:Name="VirtualizationRestartHintText"
+                                       VerticalAlignment="Center"
                                        Margin="8,0,0,0"
                                        Foreground="{DynamicResource MutedForegroundBrush}"
-                                       Text="Puedes reiniciar más tarde; la configuración quedará preparada."/>
+                                       Text="No hay cambios pendientes que requieran reinicio."/>
                         </WrapPanel>
                     </StackPanel>
                 </Grid>
