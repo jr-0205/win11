@@ -1,8 +1,8 @@
 <Window x:Class="Windows11Optimizer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Windows 11 Optimizer" Height="720" Width="1060"
-        MinHeight="620" MinWidth="920"
+        Title="Windows 11 Optimizer" Height="760" Width="1160"
+        MinHeight="650" MinWidth="980"
         WindowStartupLocation="CenterScreen">
     <Grid Margin="12">
         <Grid.RowDefinitions>
@@ -100,7 +100,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,8">
-                        <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" TextWrapping="Wrap" Text="La v0.1 inventaría las entradas de inicio y abre la pantalla oficial de Windows para habilitarlas o deshabilitarlas de forma segura."/>
+                        <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" TextWrapping="Wrap" Text="La aplicación inventaría las entradas de inicio y abre la pantalla oficial de Windows para habilitarlas o deshabilitarlas de forma segura."/>
                         <Button DockPanel.Dock="Right" Content="Abrir Apps de inicio" Click="OpenStartupSettings_Click"/>
                     </DockPanel>
                     <DataGrid Grid.Row="1" x:Name="StartupGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
@@ -108,6 +108,53 @@
                             <DataGridTextColumn Header="Nombre" Binding="{Binding Name}" Width="220"/>
                             <DataGridTextColumn Header="Origen" Binding="{Binding Source}" Width="180"/>
                             <DataGridTextColumn Header="Comando" Binding="{Binding Command}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="WinUtil · catálogo">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" BorderBrush="#33000000" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock FontWeight="SemiBold" Text="Integración segura de Chris Titus Tech WinUtil"/>
+                            <TextBlock TextWrapping="Wrap" Margin="0,4,0,0">
+                                Esta pestaña importa únicamente el catálogo JSON desde una versión fijada del repositorio oficial. No ejecuta irm|iex, no descarga PowerShell ejecutable y ningún tweak de WinUtil puede aplicarse automáticamente desde esta versión de Windows11Optimizer.
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <DockPanel Grid.Row="1" Margin="0,0,0,8">
+                        <WrapPanel DockPanel.Dock="Left">
+                            <Button Content="Cargar catálogo fijado" Click="LoadWinUtil_Click"/>
+                            <Button Content="Actualizar caché" Click="RefreshWinUtil_Click"/>
+                            <Button Content="Abrir repo oficial" Click="OpenWinUtilRepo_Click"/>
+                        </WrapPanel>
+                        <TextBlock x:Name="WinUtilStatusText"
+                                   DockPanel.Dock="Right"
+                                   VerticalAlignment="Center"
+                                   TextAlignment="Right"
+                                   Text="WinUtil 26.08.19 · sin cargar"/>
+                    </DockPanel>
+
+                    <DataGrid Grid.Row="2" x:Name="WinUtilGrid"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              EnableRowVirtualization="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Riesgo" Binding="{Binding Risk}" Width="85"/>
+                            <DataGridTextColumn Header="Tweak" Binding="{Binding Content}" Width="220"/>
+                            <DataGridTextColumn Header="Categoría" Binding="{Binding Category}" Width="170"/>
+                            <DataGridTextColumn Header="Presets" Binding="{Binding Presets}" Width="170"/>
+                            <DataGridTextColumn Header="Acciones" Binding="{Binding Actions}" Width="190"/>
+                            <DataGridTextColumn Header="Descripción" Binding="{Binding Description}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -125,6 +172,6 @@
             </TabItem>
         </TabControl>
 
-        <TextBlock Grid.Row="2" Margin="4,8,4,0" Opacity="0.65" Text="v0.1 · Los cambios del perfil seguro requieren permisos de administrador y crean una copia de seguridad antes de modificar servicios."/>
+        <TextBlock Grid.Row="2" Margin="4,8,4,0" Opacity="0.65" Text="v0.2 · Perfil seguro reversible · WinUtil integrado como catálogo de solo lectura · Requiere administrador para cambios del sistema."/>
     </Grid>
 </Window>
