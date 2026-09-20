@@ -22,6 +22,11 @@ public sealed class StartupEntry
         Kind.Equals("Registry", StringComparison.OrdinalIgnoreCase) &&
         !string.IsNullOrWhiteSpace(RegistryPath);
 
+    public bool CanDisableAtStartup =>
+        Kind.Equals("Registry", StringComparison.OrdinalIgnoreCase) &&
+        !string.IsNullOrWhiteSpace(RegistryPath) &&
+        !string.IsNullOrWhiteSpace(RegistryValueName);
+
     public string StatusDisplay => IsOrphaned
         ? "Huérfana: programa no encontrado"
         : TargetCanBeVerified
@@ -45,4 +50,5 @@ public sealed class StartupEntryBackup
     public string RegistryPath { get; set; } = "";
     public string RegistryValueName { get; set; } = "";
     public bool Restored { get; set; }
+    public string Reason { get; set; } = "Removed";
 }
