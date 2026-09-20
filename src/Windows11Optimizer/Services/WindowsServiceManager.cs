@@ -26,14 +26,46 @@ public sealed class WindowsServiceManager
         };
     }
 
-    public async Task SetManualAndStartAsync(string name)
+    public Task SetStartupManualAsync(string name) =>
+        ConfigureStartAsync(name, "demand");
+
+    public Task SetStartupAutomaticAsync(string name) =>
+        ConfigureStartAsync(name, "auto");
+
+    public Task SetStartupDisabledAsync(string name) =>
+        ConfigureStartAsync(name, "disabled");
+
+    public async Task StartAsync(string name)
     {
-        await ConfigureStartAsync(name, "demand");
         using var controller = new ServiceController(name);
         controller.Refresh();
         if (controller.Status == ServiceControllerStatus.Running) return;
+
         controller.Start();
-        await Task.Run(() => controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(12)));
+        await Task.Run(() =>
+            controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(12)));
+    }
+
+    public async Task StopAsync(string name)
+    {
+        using var controller = new ServiceController(name);
+        controller.Refresh();
+
+        if (controller.Status is ServiceControllerStatus.Stopped or ServiceControllerStatus.StopPending)
+            return;
+
+        if (!controller.CanStop)
+            throw new InvalidOperationException($"El servicio '{name}' no permite detenerse en este momento.");
+
+        controller.Stop();
+        await Task.Run(() =>
+            controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(12)));
+    }
+
+    public async Task SetManualAndStartAsync(string name)
+    {
+        await SetStartupManualAsync(name);
+        await StartAsync(name);
     }
 
     public async Task StopAndDisableAsync(string name)
@@ -53,7 +85,7 @@ public sealed class WindowsServiceManager
             return;
         }
 
-        await ConfigureStartAsync(name, "disabled");
+        await SetStartupDisabledAsync(name);
     }
 
     public async Task RestoreAsync(string name, string startMode, bool shouldRun)
