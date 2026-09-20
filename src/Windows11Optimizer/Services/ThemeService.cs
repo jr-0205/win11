@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
+using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls;
 
 namespace Windows11Optimizer.Services;
 
@@ -27,36 +29,48 @@ public sealed class ThemeService
 
         var resources = Application.Current.Resources;
 
+        ApplicationThemeManager.Apply(
+            dark ? ApplicationTheme.Dark : ApplicationTheme.Light,
+            WindowBackdropType.Mica,
+            updateAccent: true);
+
         if (dark)
         {
-            resources["AppBackgroundBrush"] = Brush("#111318");
-            resources["SurfaceBrush"] = Brush("#191C22");
-            resources["SurfaceAltBrush"] = Brush("#20242C");
-            resources["ForegroundBrush"] = Brush("#F3F5F7");
-            resources["MutedForegroundBrush"] = Brush("#AAB1BC");
-            resources["BorderBrush"] = Brush("#343A45");
-            resources["AccentBrush"] = Brush("#5EA1FF");
-            resources["ButtonBrush"] = Brush("#252A33");
-            resources["ButtonHoverBrush"] = Brush("#303744");
-            resources["SuccessBrush"] = Brush("#1F7A4D");
-            resources["WarningBrush"] = Brush("#9A6A17");
-            resources["ErrorBrush"] = Brush("#9B3B42");
+            resources["AppBackgroundBrush"] = Brush("#0C0E12");
+            resources["SurfaceBrush"] = Brush("#15181E");
+            resources["SurfaceAltBrush"] = Brush("#1C2027");
+            resources["ForegroundBrush"] = Brush("#F6F7F9");
+            resources["MutedForegroundBrush"] = Brush("#A7AFBB");
+            resources["BorderBrush"] = Brush("#2C323C");
+            resources["ButtonBrush"] = Brush("#20252D");
+            resources["ButtonHoverBrush"] = Brush("#2A303A");
+            resources["SuccessBrush"] = Brush("#2EA66A");
+            resources["WarningBrush"] = Brush("#C28A24");
+            resources["ErrorBrush"] = Brush("#D95C66");
+            resources["SelectionBrush"] = Brush("#263A59");
+            resources["SelectionForegroundBrush"] = Brush("#F8FAFC");
         }
         else
         {
-            resources["AppBackgroundBrush"] = Brush("#F3F5F8");
+            resources["AppBackgroundBrush"] = Brush("#F3F5F7");
             resources["SurfaceBrush"] = Brush("#FFFFFF");
             resources["SurfaceAltBrush"] = Brush("#F7F8FA");
-            resources["ForegroundBrush"] = Brush("#1A1D23");
-            resources["MutedForegroundBrush"] = Brush("#626A76");
-            resources["BorderBrush"] = Brush("#D7DBE2");
-            resources["AccentBrush"] = Brush("#2563EB");
-            resources["ButtonBrush"] = Brush("#F3F4F6");
-            resources["ButtonHoverBrush"] = Brush("#E8ECF2");
-            resources["SuccessBrush"] = Brush("#1E7A46");
-            resources["WarningBrush"] = Brush("#A26300");
-            resources["ErrorBrush"] = Brush("#B23A42");
+            resources["ForegroundBrush"] = Brush("#171A20");
+            resources["MutedForegroundBrush"] = Brush("#66707D");
+            resources["BorderBrush"] = Brush("#D9DEE6");
+            resources["ButtonBrush"] = Brush("#F5F6F8");
+            resources["ButtonHoverBrush"] = Brush("#EAEDF2");
+            resources["SuccessBrush"] = Brush("#218653");
+            resources["WarningBrush"] = Brush("#A86D00");
+            resources["ErrorBrush"] = Brush("#B83E49");
+            resources["SelectionBrush"] = Brush("#E8F0FE");
+            resources["SelectionForegroundBrush"] = Brush("#111827");
         }
+
+        var accent = ApplicationAccentColorManager.SystemAccent;
+        var accentBrush = new SolidColorBrush(accent);
+        accentBrush.Freeze();
+        resources["AccentBrush"] = accentBrush;
 
         if (persist)
             SavePreference();
