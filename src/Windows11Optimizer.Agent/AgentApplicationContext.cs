@@ -316,6 +316,15 @@ internal sealed class AgentApplicationContext : ApplicationContext
 
     private void ExitAgent()
     {
+        try
+        {
+            _focus.Restore();
+        }
+        catch
+        {
+            // La sesión persistida permite reintentar la restauración después.
+        }
+
         _tray.Visible = false;
         ExitThread();
     }
