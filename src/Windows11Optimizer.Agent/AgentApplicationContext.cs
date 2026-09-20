@@ -7,10 +7,10 @@ namespace Windows11Optimizer.Agent;
 internal sealed class AgentApplicationContext : ApplicationContext
 {
     public const string ShowFocusEventName =
-        "Local\Windows11Optimizer.Agent.ShowFocus";
+        @"Local\Windows11Optimizer.Agent.ShowFocus";
 
     public const string ShowSettingsEventName =
-        "Local\Windows11Optimizer.Agent.ShowSettings";
+        @"Local\Windows11Optimizer.Agent.ShowSettings";
 
     private readonly NotifyIcon _tray = new();
     private readonly FocusBoostService _focus = new();
