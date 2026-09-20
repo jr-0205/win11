@@ -123,11 +123,32 @@
                             </Border>
                         </UniformGrid>
 
+                        <GroupBox Header="Análisis inteligente">
+                            <StackPanel>
+                                <TextBlock x:Name="SmartAnalysisText"
+                                           Margin="4"
+                                           TextWrapping="Wrap"
+                                           Text="Pulsa “Analizar equipo” para buscar oportunidades reales antes de cambiar nada."/>
+                                <WrapPanel Margin="0,6,0,0">
+                                    <Button Content="Analizar equipo"
+                                            Click="AnalyzeComputer_Click"/>
+                                    <Button Content="Obtener Autoruns"
+                                            Click="OpenAutorunsDownload_Click"
+                                            ToolTip="Abre la página oficial de Microsoft Sysinternals."/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
+
                         <GroupBox Header="Optimización recomendada">
                             <StackPanel>
                                 <TextBlock TextWrapping="Wrap" Margin="4">
                                     Reduce procesos y servicios que no necesitas todo el tiempo. La app conserva seguridad, actualizaciones, audio, Wi-Fi, Bluetooth, touchpad y otras funciones importantes.
                                 </TextBlock>
+                                <TextBlock x:Name="OptimizationResultText"
+                                           Margin="4,8,4,0"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"
+                                           Text="Todavía no se ha ejecutado una optimización en esta sesión."/>
                                 <WrapPanel Margin="0,8,0,0">
                                     <Button Content="Optimizar ahora" Click="OptimizeSafe_Click"/>
                                     <Button Content="Deshacer cambios" Click="Restore_Click"/>
@@ -365,6 +386,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Margin="0,0,0,8">
@@ -435,10 +457,49 @@
                                                 Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
+
+                    <Expander Grid.Row="3"
+                              Header="Análisis avanzado con Microsoft Autoruns"
+                              Margin="0,8,0,0">
+                        <StackPanel>
+                            <TextBlock x:Name="AutorunsStatusText"
+                                       Margin="4"
+                                       TextWrapping="Wrap"
+                                       Text="Comprobando si Autoruns está disponible…"/>
+                            <WrapPanel>
+                                <Button Content="Analizar con Autoruns"
+                                        Click="AnalyzeAutoruns_Click"/>
+                                <Button Content="Abrir / obtener Autoruns"
+                                        Click="OpenAutoruns_Click"/>
+                            </WrapPanel>
+                            <DataGrid x:Name="AutorunsFindingsGrid"
+                                      Height="180"
+                                      Margin="4,6,4,0"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      AlternationCount="2">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Entrada"
+                                                        Binding="{Binding NameDisplay}"
+                                                        Width="220"/>
+                                    <DataGridTextColumn Header="Estado"
+                                                        Binding="{Binding StatusDisplay}"
+                                                        Width="160"/>
+                                    <DataGridTextColumn Header="Tipo"
+                                                        Binding="{Binding SourceDisplay}"
+                                                        Width="170"/>
+                                    <DataGridTextColumn Header="Programa"
+                                                        Binding="{Binding ImagePath}"
+                                                        Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Expander>
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Opciones de WinUtil">
+            <TabItem Header="WinUtil">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -447,53 +508,137 @@
                     </Grid.RowDefinitions>
 
                     <Border Grid.Row="0"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            Background="{DynamicResource SurfaceBrush}"
-                            BorderThickness="1"
+                            Padding="12"
+                            Margin="0,0,0,8"
                             CornerRadius="8"
-                            Padding="10"
-                            Margin="0,0,0,8">
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1">
                         <StackPanel>
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="Ideas de optimización de WinUtil"/>
-                            <TextBlock TextWrapping="Wrap"
-                                       Margin="0,4,0,0"
-                                       Foreground="{DynamicResource MutedForegroundBrush}">
-                                Aquí puedes consultar opciones conocidas de WinUtil explicadas en español. Son solo informativas: Windows11Optimizer no aplica ninguna de ellas automáticamente ni ejecuta código remoto.
-                            </TextBlock>
+                            <TextBlock Text="Ajustes de WinUtil"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Margin="0,4,0,0"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource MutedForegroundBrush}"
+                                       Text="Mostramos primero ajustes sencillos que Windows11Optimizer puede aplicar y deshacer de forma nativa. Las opciones avanzadas siguen disponibles para consulta, pero no ejecutamos scripts remotos."/>
                         </StackPanel>
                     </Border>
 
                     <DockPanel Grid.Row="1" Margin="0,0,0,8">
                         <WrapPanel DockPanel.Dock="Left">
-                            <Button Content="Ver opciones" Click="LoadWinUtil_Click"/>
-                            <Button Content="Actualizar lista" Click="RefreshWinUtil_Click"/>
-                            <Button Content="Ver proyecto original" Click="OpenWinUtilRepo_Click"/>
+                            <Button Content="Actualizar"
+                                    Click="RefreshWinUtil_Click"/>
+                            <Button Content="Proyecto original"
+                                    Click="OpenWinUtilRepo_Click"/>
+                            <CheckBox x:Name="WinUtilShowAllToggle"
+                                      Content="Mostrar opciones avanzadas y de consulta"
+                                      VerticalAlignment="Center"
+                                      Margin="10,0,0,0"
+                                      Checked="WinUtilShowAllToggle_Changed"
+                                      Unchecked="WinUtilShowAllToggle_Changed"/>
                         </WrapPanel>
                         <TextBlock x:Name="WinUtilStatusText"
                                    DockPanel.Dock="Right"
                                    VerticalAlignment="Center"
-                                   TextAlignment="Right"
                                    Foreground="{DynamicResource MutedForegroundBrush}"
-                                   Text="WinUtil 26.08.19 · sin cargar"/>
+                                   Text="Cargando opciones…"/>
                     </DockPanel>
 
-                    <DataGrid Grid.Row="2"
-                              x:Name="WinUtilGrid"
-                              AutoGenerateColumns="False"
-                              IsReadOnly="True"
-                              CanUserAddRows="False"
-                              EnableRowVirtualization="True"
-                              AlternationCount="2">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Nivel" Binding="{Binding Risk}" Width="85"/>
-                            <DataGridTextColumn Header="Opción" Binding="{Binding Content}" Width="220"/>
-                            <DataGridTextColumn Header="Categoría" Binding="{Binding Category}" Width="170"/>
-                            <DataGridTextColumn Header="Perfiles" Binding="{Binding Presets}" Width="170"/>
-                            <DataGridTextColumn Header="Qué modifica" Binding="{Binding Actions}" Width="190"/>
-                            <DataGridTextColumn Header="Qué hace" Binding="{Binding Description}" Width="*"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <DataGrid Grid.Column="0"
+                                  x:Name="WinUtilGrid"
+                                  Margin="0,0,8,0"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  SelectionMode="Single"
+                                  SelectionChanged="WinUtilGrid_SelectionChanged"
+                                  AlternationCount="2">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Opción"
+                                                    Binding="{Binding Content}"
+                                                    Width="*"/>
+                                <DataGridTextColumn Header="Categoría"
+                                                    Binding="{Binding Category}"
+                                                    Width="145"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <Border Grid.Column="1"
+                                Padding="16"
+                                CornerRadius="8"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock x:Name="WinUtilSelectedTitleText"
+                                               Text="Selecciona una opción"
+                                               FontSize="20"
+                                               FontWeight="SemiBold"
+                                               TextWrapping="Wrap"/>
+
+                                    <TextBlock x:Name="WinUtilSelectedStateText"
+                                               Margin="0,5,0,0"
+                                               Foreground="{DynamicResource AccentBrush}"
+                                               FontWeight="SemiBold"
+                                               Text="Sin seleccionar"/>
+
+                                    <TextBlock Text="Qué hace"
+                                               Margin="0,18,0,4"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="WinUtilSelectedDescriptionText"
+                                               Text="Selecciona una opción de la lista para ver una explicación sencilla."
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
+
+                                    <TextBlock Text="Qué cambia en tu PC"
+                                               Margin="0,18,0,4"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="WinUtilSelectedImpactText"
+                                               Text="No se realizará ningún cambio hasta que pulses Aplicar."
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
+
+                                    <TextBlock x:Name="WinUtilSelectedCategoryText"
+                                               Margin="0,12,0,0"
+                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
+
+                                    <WrapPanel Margin="0,16,0,0">
+                                        <Button x:Name="WinUtilApplyButton"
+                                                Content="Aplicar"
+                                                Click="ApplySelectedWinUtil_Click"
+                                                IsEnabled="False"/>
+                                        <Button x:Name="WinUtilRestoreButton"
+                                                Content="Deshacer"
+                                                Click="RestoreSelectedWinUtil_Click"
+                                                IsEnabled="False"/>
+                                    </WrapPanel>
+
+                                    <TextBlock Margin="0,8,0,0"
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource MutedForegroundBrush}"
+                                               Text="Los ajustes aplicables guardan el valor anterior antes de modificar Windows."/>
+
+                                    <Expander Header="Detalles técnicos"
+                                              Margin="0,18,0,0">
+                                        <TextBlock x:Name="WinUtilTechnicalText"
+                                                   Margin="8"
+                                                   FontFamily="Cascadia Mono, Consolas"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource MutedForegroundBrush}"
+                                                   Text="ID, acciones y perfil aparecerán aquí."/>
+                                    </Expander>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
                 </Grid>
             </TabItem>
 
