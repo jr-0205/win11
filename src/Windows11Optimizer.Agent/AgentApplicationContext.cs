@@ -18,6 +18,9 @@ internal sealed class AgentApplicationContext : ApplicationContext
     private readonly GlobalHotkeyWindow _hotkeys = new();
     private readonly EventWaitHandle _showFocusEvent;
     private readonly EventWaitHandle _showSettingsEvent;
+    private readonly RegisteredWaitHandle _showFocusWait;
+    private readonly RegisteredWaitHandle _showSettingsWait;
+    private readonly Control _uiDispatcher = new();
     private readonly System.Windows.Forms.Timer _focusWatchTimer = new();
 
     private RegisteredHotkeys _registered;
@@ -40,14 +43,18 @@ internal sealed class AgentApplicationContext : ApplicationContext
             EventResetMode.AutoReset,
             ShowSettingsEventName);
 
-        ThreadPool.RegisterWaitForSingleObject(
+        // Fuerza un HWND creado en el hilo principal para poder volver
+        // siempre al hilo WinForms desde señales/hotkeys asíncronos.
+        _ = _uiDispatcher.Handle;
+
+        _showFocusWait = ThreadPool.RegisterWaitForSingleObject(
             _showFocusEvent,
             (_, _) => BeginUi(ShowMiniFocus),
             null,
             Timeout.Infinite,
             executeOnlyOnce: false);
 
-        ThreadPool.RegisterWaitForSingleObject(
+        _showSettingsWait = ThreadPool.RegisterWaitForSingleObject(
             _showSettingsEvent,
             (_, _) => BeginUi(ShowSettings),
             null,
@@ -99,14 +106,22 @@ internal sealed class AgentApplicationContext : ApplicationContext
             ? ShowSettingsEventName
             : ShowFocusEventName;
 
-        try
+        for (var attempt = 0; attempt < 10; attempt++)
         {
-            using var signal = EventWaitHandle.OpenExisting(eventName);
-            signal.Set();
-        }
-        catch
-        {
-            // La instancia principal puede estar terminando de arrancar.
+            try
+            {
+                using var signal = EventWaitHandle.OpenExisting(eventName);
+                signal.Set();
+                return;
+            }
+            catch (WaitHandleCannotBeOpenedException)
+            {
+                Thread.Sleep(100);
+            }
+            catch
+            {
+                return;
+            }
         }
     }
 
@@ -114,9 +129,12 @@ internal sealed class AgentApplicationContext : ApplicationContext
     {
         try
         {
-            if (_tray.ContextMenuStrip?.InvokeRequired == true)
+            if (_uiDispatcher.IsDisposed)
+                return;
+
+            if (_uiDispatcher.InvokeRequired)
             {
-                _tray.ContextMenuStrip.BeginInvoke(action);
+                _uiDispatcher.BeginInvoke(action);
                 return;
             }
 
@@ -264,12 +282,15 @@ internal sealed class AgentApplicationContext : ApplicationContext
     protected override void ExitThreadCore()
     {
         UnregisterHotkeys();
+        _showFocusWait.Unregister(null);
+        _showSettingsWait.Unregister(null);
         _focusWatchTimer.Stop();
         _focusWatchTimer.Dispose();
         _hotkeys.Dispose();
         _focus.Dispose();
         _showFocusEvent.Dispose();
         _showSettingsEvent.Dispose();
+        _uiDispatcher.Dispose();
         _tray.Dispose();
         base.ExitThreadCore();
     }
