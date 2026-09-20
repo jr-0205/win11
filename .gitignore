@@ -1,0 +1,20 @@
+# .NET
+bin/
+obj/
+publish/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+# JetBrains
+.idea/
+
+# Logs / backups locales
+*.log
+backup.json
+
+# OS
+Thumbs.db
+Desktop.ini
