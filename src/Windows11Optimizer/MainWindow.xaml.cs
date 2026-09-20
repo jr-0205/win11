@@ -599,55 +599,104 @@ public partial class MainWindow : Window
             : "Copia de seguridad: aún no creada";
     }
 
-    private async void OptimizeSafe_Click(object sender, RoutedEventArgs e)
+    private async void AnalyzeOptimization_Click(
+        object sender,
+        RoutedEventArgs e)
     {
+        BeginActivity(
+            "Analizando optimización",
+            "Buscando componentes que pueden quedar disponibles solo cuando se necesiten…");
+
+        try
+        {
+            var plan = await _smartOptimizer.AnalyzeAsync();
+            _lastOptimizationPlan = plan;
+
+            OptimizationPlanGrid.ItemsSource = plan.Opportunities;
+            SmartOptimizationSummaryText.Text = plan.Summary;
+            ApplySmartOptimizationButton.IsEnabled = plan.ApplicableCount > 0;
+
+            EndActivity(
+                "Análisis listo",
+                plan.Summary,
+                ActivityKind.Success);
+
+            ShowToast(
+                plan.ApplicableCount > 0
+                    ? "Hay recomendaciones listas para aplicar."
+                    : "No encontramos cambios necesarios.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error analizando optimización: {ex.Message}");
+            EndActivity(
+                "No se pudo analizar la optimización",
+                ex.Message,
+                ActivityKind.Error);
+            ShowToast(
+                "No se pudo completar el análisis.",
+                ActivityKind.Error);
+        }
+    }
+
+    private async void ApplySmartOptimization_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var plan = _lastOptimizationPlan ?? await _smartOptimizer.AnalyzeAsync();
+
+        if (plan.ApplicableCount == 0)
+        {
+            ShowToast(
+                "Los componentes administrados ya están en la configuración recomendada.",
+                ActivityKind.Success);
+            return;
+        }
+
         var answer = MessageBox.Show(
-            "La app medirá el estado actual, aplicará únicamente el perfil seguro y volverá a medir para mostrarte el resultado.\n\n" +
-            "Se creará una copia de seguridad antes de cambiar servicios o tareas. ¿Continuar?",
-            "Optimizar ahora",
+            "La app dejará los componentes aprobados disponibles para que se inicien cuando una aplicación los necesite.\n\n" +
+            "No se deshabilitarán funciones ni actividades programadas. Se guardará una copia del estado anterior. ¿Continuar?",
+            "Aplicar optimización",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
 
         if (answer != MessageBoxResult.Yes)
-        {
-            ShowToast("Optimización cancelada. No se realizó ningún cambio.", ActivityKind.Info);
             return;
-        }
 
         try
         {
             var before = await _smartAnalysis.CaptureAsync(includeAutoruns: false);
 
             await RunOperationAsync(
-                "Aplicando optimización segura",
-                "Deteniendo componentes bajo demanda y actualizando tareas aprobadas…",
+                "Aplicando optimización inteligente",
+                "Dejando componentes aprobados disponibles solo cuando se necesiten…",
                 () => _optimizer.OptimizeSafeAsync(Log));
 
-            await Task.Delay(1200);
             var after = await _smartAnalysis.CaptureAsync(includeAutoruns: false);
+            var refreshedPlan = await _smartOptimizer.AnalyzeAsync();
 
-            var ramSavedMb = Math.Max(
-                0,
-                (before.UsedRamGb - after.UsedRamGb) * 1024d);
-
-            var processReduction = Math.Max(
-                0,
-                before.ProcessCount - after.ProcessCount);
+            _lastOptimizationPlan = refreshedPlan;
+            OptimizationPlanGrid.ItemsSource = refreshedPlan.Opportunities;
+            SmartOptimizationSummaryText.Text = refreshedPlan.Summary;
+            ApplySmartOptimizationButton.IsEnabled =
+                refreshedPlan.ApplicableCount > 0;
 
             OptimizationResultText.Text =
-                $"Resultado de esta sesión: RAM {before.UsedRamGb:N2} → {after.UsedRamGb:N2} GB " +
-                $"(≈ {ramSavedMb:N0} MB menos). Procesos {before.ProcessCount} → {after.ProcessCount} " +
-                $"({processReduction} menos). " +
-                $"Las cifras pueden variar unos minutos después por procesos normales de Windows.";
+                $"Configuración aplicada. Procesos actuales: {before.ProcessCount} → {after.ProcessCount}. " +
+                "El principal beneficio se notará en próximos inicios de Windows, porque la app no fuerza el cierre de componentes que ya están funcionando.";
 
             RefreshBackupStatus();
             RefreshStartup();
         }
         catch (Exception ex)
         {
-            Log($"Error midiendo optimización: {ex.Message}");
+            Log($"Error aplicando optimización inteligente: {ex.Message}");
             OptimizationResultText.Text =
-                "La optimización terminó, pero no fue posible calcular la comparación antes/después.";
+                "No se pudo completar la optimización. No se deshabilitaron componentes.";
+            ShowToast(
+                "No se pudo completar la optimización.",
+                ActivityKind.Error);
         }
     }
 
@@ -655,188 +704,27 @@ public partial class MainWindow : Window
     {
         if (!_backup.Exists)
         {
-            ShowToast("No existe todavía una copia de seguridad para restaurar.", ActivityKind.Warning);
-            MessageBox.Show(
-                "No existe una copia de seguridad creada por la aplicación.",
-                "Restaurar",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-            return;
-        }
-
-        var answer = MessageBox.Show(
-            "Se restaurarán los estados guardados antes de la primera optimización. ¿Continuar?",
-            "Restaurar configuración",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        if (answer != MessageBoxResult.Yes)
-        {
-            ShowToast("Restauración cancelada.", ActivityKind.Info);
-            return;
-        }
-
-        await RunOperationAsync(
-            "Restaurando configuración",
-            "Reponiendo servicios y tareas guardados en el backup…",
-            () => _optimizer.RestoreAsync(Log));
-    }
-
-    private async void StartVmware_Click(object sender, RoutedEventArgs e) =>
-        await RunOperationAsync(
-            "Iniciando VMware",
-            "Activando servicios de red VMware bajo demanda…",
-            () => _optimizer.StartVmwareAsync(Log));
-
-    private async void StopVmware_Click(object sender, RoutedEventArgs e) =>
-        await RunOperationAsync(
-            "Deteniendo VMware",
-            "Deteniendo servicios VMware y bloqueando su próximo arranque…",
-            () => _optimizer.StopVmwareAsync(Log));
-
-    private async void StartAcer_Click(object sender, RoutedEventArgs e) =>
-        await RunOperationAsync(
-            "Iniciando utilidades Acer",
-            "Activando temporalmente los componentes Acer administrados…",
-            () => _optimizer.StartAcerAsync(Log));
-
-    private async void StopAcer_Click(object sender, RoutedEventArgs e) =>
-        await RunOperationAsync(
-            "Deteniendo utilidades Acer",
-            "Deteniendo los componentes Acer administrados…",
-            () => _optimizer.StopAcerAsync(Log));
-
-    private async void RefreshServices_Click(object sender, RoutedEventArgs e)
-    {
-        BeginActivity("Actualizando servicios", "Leyendo el estado actual desde Windows…");
-
-        try
-        {
-            await RefreshServicesAsync();
-            EndActivity("Servicios actualizados", "La tabla refleja el estado actual.", ActivityKind.Success);
-            ShowToast("Servicios actualizados.", ActivityKind.Success);
-        }
-        catch (Exception ex)
-        {
-            EndActivity("Error actualizando servicios", ex.Message, ActivityKind.Error);
-            ShowToast("No se pudo actualizar la lista de servicios.", ActivityKind.Error);
-            Log($"Error actualizando servicios: {ex.Message}");
-        }
-    }
-
-    private void ServicesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (ServicesGrid.SelectedItem is not ManagedService service)
-        {
-            SelectedServiceText.Text = "Ninguno";
-            return;
-        }
-
-        var suffix = SafeProfile.IsUserManageableService(service.Name)
-            ? " · editable"
-            : " · protegido";
-
-        SelectedServiceText.Text =
-            $"{service.DisplayName} ({service.Name}){suffix}";
-    }
-
-    private async void SetServiceManual_Click(object sender, RoutedEventArgs e)
-    {
-        var service = GetSelectedManageableServiceOrNotify();
-        if (service is null) return;
-
-        await RunOperationAsync(
-            $"Cambiando {service.DisplayName} a Manual",
-            "Guardando backup y cambiando únicamente el tipo de inicio…",
-            () => _optimizer.SetSafeServiceStartupAsync(service.Name, "manual", Log));
-    }
-
-    private async void SetServiceAutomatic_Click(object sender, RoutedEventArgs e)
-    {
-        var service = GetSelectedManageableServiceOrNotify();
-        if (service is null) return;
-
-        await RunOperationAsync(
-            $"Cambiando {service.DisplayName} a Automático",
-            "Guardando backup y habilitando el arranque automático…",
-            () => _optimizer.SetSafeServiceStartupAsync(service.Name, "automatic", Log));
-    }
-
-    private async void StartSelectedService_Click(object sender, RoutedEventArgs e)
-    {
-        var service = GetSelectedManageableServiceOrNotify();
-        if (service is null) return;
-
-        await RunOperationAsync(
-            $"Iniciando {service.DisplayName}",
-            "Iniciando el servicio seguro seleccionado…",
-            () => _optimizer.StartSafeServiceAsync(service.Name, Log));
-    }
-
-    private async void StopSelectedService_Click(object sender, RoutedEventArgs e)
-    {
-        var service = GetSelectedManageableServiceOrNotify();
-        if (service is null) return;
-
-        await RunOperationAsync(
-            $"Deteniendo {service.DisplayName}",
-            "Deteniendo el servicio seguro seleccionado…",
-            () => _optimizer.StopSafeServiceAsync(service.Name, Log));
-    }
-
-    private async void DisableSelectedService_Click(object sender, RoutedEventArgs e)
-    {
-        var service = GetSelectedManageableServiceOrNotify();
-        if (service is null) return;
-
-        if (!SafeProfile.CanDisableService(service.Name))
-        {
             ShowToast(
-                "Este servicio no está aprobado para quedar deshabilitado.",
+                "No existe todavía una copia de seguridad para restaurar.",
                 ActivityKind.Warning);
             return;
         }
 
         var answer = MessageBox.Show(
-            $"Se impedirá que '{service.DisplayName}' arranque automáticamente.\n\n" +
-            "Podrás volver a Manual o Automático desde esta misma pantalla. ¿Continuar?",
-            "Deshabilitar arranque",
+            "Se restaurará la forma en que estos componentes iniciaban antes de la primera optimización. ¿Continuar?",
+            "Deshacer optimización",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
 
         if (answer != MessageBoxResult.Yes)
-        {
-            ShowToast("Cambio cancelado.", ActivityKind.Info);
             return;
-        }
 
         await RunOperationAsync(
-            $"Deshabilitando arranque de {service.DisplayName}",
-            "Guardando backup y cambiando el inicio a Deshabilitado…",
-            () => _optimizer.SetSafeServiceStartupAsync(service.Name, "disabled", Log));
-    }
+            "Deshaciendo optimización",
+            "Restaurando la configuración guardada…",
+            () => _optimizer.RestoreAsync(Log));
 
-    private ManagedService? GetSelectedManageableServiceOrNotify()
-    {
-        if (ServicesGrid.SelectedItem is not ManagedService service)
-        {
-            ShowToast(
-                "Selecciona primero un servicio de la tabla.",
-                ActivityKind.Warning);
-            return null;
-        }
-
-        if (!SafeProfile.IsUserManageableService(service.Name))
-        {
-            ShowToast(
-                $"'{service.DisplayName}' está protegido y Windows11Optimizer no permitirá modificarlo.",
-                ActivityKind.Warning);
-
-            Log($"Cambio bloqueado por política segura: {service.Name}");
-            return null;
-        }
-
-        return service;
+        await RefreshServicesAsync();
     }
 
     private async Task RefreshVirtualizationAsync()
