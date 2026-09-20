@@ -407,7 +407,19 @@
                               IsReadOnly="True"
                               CanUserAddRows="False"
                               SelectionMode="Single"
-                              AlternationCount="2">
+                              AlternationCount="2"
+                              PreviewMouseRightButtonDown="StartupGrid_PreviewMouseRightButtonDown">
+                        <DataGrid.ContextMenu>
+                            <ContextMenu Background="{DynamicResource SurfaceBrush}"
+                                         Foreground="{DynamicResource ForegroundBrush}"
+                                         BorderBrush="{DynamicResource BorderBrush}"
+                                         BorderThickness="1"
+                                         Padding="4">
+                                <MenuItem Header="Abrir ubicación"
+                                          Click="OpenStartupEntryLocation_Click"
+                                          ToolTip="Abre en el Explorador la carpeta del programa asociado a la entrada seleccionada."/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Nombre"
                                                 Binding="{Binding Name}"
