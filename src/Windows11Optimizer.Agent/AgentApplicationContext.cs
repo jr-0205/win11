@@ -18,6 +18,7 @@ internal sealed class AgentApplicationContext : ApplicationContext
     private readonly GlobalHotkeyWindow _hotkeys = new();
     private readonly EventWaitHandle _showFocusEvent;
     private readonly EventWaitHandle _showSettingsEvent;
+    private readonly System.Windows.Forms.Timer _focusWatchTimer = new();
 
     private RegisteredHotkeys _registered;
     private AgentSettings _settings;
@@ -66,6 +67,20 @@ internal sealed class AgentApplicationContext : ApplicationContext
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Salir del agente", null, (_, _) => ExitAgent());
         _tray.ContextMenuStrip = menu;
+
+        _focusWatchTimer.Interval = 2000;
+        _focusWatchTimer.Tick += (_, _) =>
+        {
+            try
+            {
+                _focus.GetStatus();
+            }
+            catch
+            {
+                // El siguiente tick vuelve a comprobar el estado.
+            }
+        };
+        _focusWatchTimer.Start();
 
         var applied = ApplyHotkeys(_settings);
         if (!applied.Success)
@@ -249,6 +264,8 @@ internal sealed class AgentApplicationContext : ApplicationContext
     protected override void ExitThreadCore()
     {
         UnregisterHotkeys();
+        _focusWatchTimer.Stop();
+        _focusWatchTimer.Dispose();
         _hotkeys.Dispose();
         _focus.Dispose();
         _showFocusEvent.Dispose();
