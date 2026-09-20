@@ -5,7 +5,7 @@ namespace Windows11Optimizer.Agent;
 internal static class Program
 {
     private const string MutexName =
-        "Local\Windows11Optimizer.Agent.Singleton";
+        @"Local\Windows11Optimizer.Agent.Singleton";
 
     [STAThread]
     private static void Main(string[] args)
