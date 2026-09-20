@@ -45,7 +45,10 @@ public sealed class OptimizationService
     }
 
     public Task StartVmwareAsync(Action<string> log) =>
-        PrepareVmwareAsync(enableUsb: false, enableAutostart: false, log);
+        PrepareVmwareAsync(
+            enableUsb: false,
+            enableAutostart: false,
+            log: log);
 
     public Task StopVmwareAsync(Action<string> log) =>
         StopGroupAsync(SafeProfile.VmwareServices, log);
