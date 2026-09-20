@@ -144,24 +144,59 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="Servicios bajo demanda">
+            <TabItem Header="Servicios seguros">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <WrapPanel Grid.Row="0" Margin="0,0,0,8">
-                        <Button Content="Iniciar VMware" Click="StartVmware_Click"/>
-                        <Button Content="Detener VMware" Click="StopVmware_Click"/>
-                        <Button Content="Iniciar utilidades Acer" Click="StartAcer_Click"/>
-                        <Button Content="Detener utilidades Acer" Click="StopAcer_Click"/>
-                        <Button Content="Actualizar" Click="RefreshServices_Click"/>
-                    </WrapPanel>
-                    <DataGrid Grid.Row="1"
+
+                    <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                        <TextBlock FontWeight="SemiBold"
+                                   Text="Administrador seguro de servicios"/>
+                        <TextBlock Margin="0,3,0,5"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource MutedForegroundBrush}"
+                                   Text="Selecciona un servicio aprobado. Puedes cambiarlo entre Automático y Manual, iniciarlo o detenerlo. Solo los servicios bajo demanda aprobados permiten Deshabilitado. Los servicios protegidos se muestran únicamente como referencia."/>
+                        <WrapPanel>
+                            <Button Content="Iniciar VMware" Click="StartVmware_Click"/>
+                            <Button Content="Detener VMware" Click="StopVmware_Click"/>
+                            <Button Content="Iniciar utilidades Acer" Click="StartAcer_Click"/>
+                            <Button Content="Detener utilidades Acer" Click="StopAcer_Click"/>
+                            <Button Content="Actualizar" Click="RefreshServices_Click"/>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <Border Grid.Row="1"
+                            Padding="8"
+                            Margin="0,0,0,8"
+                            CornerRadius="7"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Left" Margin="0,0,10,0">
+                                <TextBlock Text="Servicio seleccionado" FontSize="11" Foreground="{DynamicResource MutedForegroundBrush}"/>
+                                <TextBlock x:Name="SelectedServiceText" Text="Ninguno" FontWeight="SemiBold"/>
+                            </StackPanel>
+                            <WrapPanel DockPanel.Dock="Right">
+                                <Button Content="Manual" Click="SetServiceManual_Click" ToolTip="No arranca por sí solo, pero una aplicación puede iniciarlo cuando lo necesite."/>
+                                <Button Content="Automático" Click="SetServiceAutomatic_Click" ToolTip="Windows intentará iniciarlo durante el arranque."/>
+                                <Button Content="Iniciar ahora" Click="StartSelectedService_Click"/>
+                                <Button Content="Detener ahora" Click="StopSelectedService_Click"/>
+                                <Button Content="Deshabilitar arranque" Click="DisableSelectedService_Click" ToolTip="Disponible solo para servicios bajo demanda aprobados."/>
+                            </WrapPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <DataGrid Grid.Row="2"
                               x:Name="ServicesGrid"
                               AutoGenerateColumns="False"
                               IsReadOnly="True"
                               CanUserAddRows="False"
+                              SelectionMode="Single"
+                              SelectionChanged="ServicesGrid_SelectionChanged"
                               AlternationCount="2">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Grupo" Binding="{Binding Group}" Width="110"/>
