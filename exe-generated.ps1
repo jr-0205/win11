@@ -2,7 +2,8 @@
 param(
     [switch]$Clean,
     [switch]$PortableOnly,
-    [switch]$InstallInno
+    [switch]$InstallInno,
+    [switch]$ForceCloseApp
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,6 +37,59 @@ function Find-InnoCompiler {
     return $candidates | Select-Object -First 1
 }
 
+function Ensure-AppNotRunning {
+    $running = @(Get-Process -Name "Windows11Optimizer" -ErrorAction SilentlyContinue)
+    if ($running.Count -eq 0) {
+        return
+    }
+
+    if ($ForceCloseApp) {
+        Write-Step "Cerrando Windows11Optimizer"
+        foreach ($process in $running) {
+            try {
+                Write-Host "Cerrando PID $($process.Id)..." -ForegroundColor Yellow
+                Stop-Process -Id $process.Id -Force -ErrorAction Stop
+                Wait-Process -Id $process.Id -Timeout 5 -ErrorAction SilentlyContinue
+            }
+            catch {
+                throw "No se pudo cerrar Windows11Optimizer (PID $($process.Id)). Cierra la app manualmente y vuelve a ejecutar."
+            }
+        }
+
+        Start-Sleep -Milliseconds 500
+        return
+    }
+
+    $pids = ($running | Select-Object -ExpandProperty Id) -join ", "
+    throw "Windows11Optimizer.exe está en ejecución (PID: $pids) y bloquea artifacts\portable\Windows11Optimizer.exe. Cierra la app y vuelve a ejecutar, o usa: .\exe-generated.ps1 -Clean -PortableOnly -ForceCloseApp"
+}
+
+function Remove-ArtifactsSafely {
+    if (-not (Test-Path $Artifacts)) {
+        return
+    }
+
+    Ensure-AppNotRunning
+    Write-Step "Limpiando artifacts"
+
+    $lastError = $null
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        try {
+            Remove-Item $Artifacts -Recurse -Force -ErrorAction Stop
+            return
+        }
+        catch {
+            $lastError = $_
+            if ($attempt -lt 3) {
+                Write-Host "Archivo bloqueado. Reintentando limpieza ($attempt/3)..." -ForegroundColor Yellow
+                Start-Sleep -Seconds 1
+            }
+        }
+    }
+
+    throw "No se pudo limpiar '$Artifacts'. Cierra Windows11Optimizer.exe, Explorador de archivos que esté previsualizando el EXE, o cualquier antivirus que lo esté inspeccionando. Detalle: $($lastError.Exception.Message)"
+}
+
 if ($env:OS -ne "Windows_NT") {
     throw "Este generador está diseñado para Windows."
 }
@@ -44,9 +98,8 @@ if (-not (Test-Path $Project)) {
     throw "No se encontró el proyecto: $Project"
 }
 
-if ($Clean -and (Test-Path $Artifacts)) {
-    Write-Step "Limpiando artifacts"
-    Remove-Item $Artifacts -Recurse -Force
+if ($Clean) {
+    Remove-ArtifactsSafely
 }
 
 New-Item $PublishDir -ItemType Directory -Force | Out-Null
@@ -95,6 +148,8 @@ $exe = Join-Path $PublishDir "Windows11Optimizer.exe"
 if (-not (Test-Path $exe)) {
     throw "La publicación terminó, pero no apareció Windows11Optimizer.exe."
 }
+
+Ensure-AppNotRunning
 
 Copy-Item $exe (Join-Path $PortableDir "Windows11Optimizer.exe") -Force
 Copy-Item (Join-Path $Root "LICENSE") (Join-Path $PortableDir "LICENSE.txt") -Force
