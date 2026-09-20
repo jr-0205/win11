@@ -727,6 +727,28 @@ public partial class MainWindow : Window
         await RefreshServicesAsync();
     }
 
+    private IReadOnlyList<string> GetDisabledWindowsVirtualizationServices()
+    {
+        var disabled = new List<string>();
+
+        foreach (var name in SafeProfile.WindowsVirtualizationRepairServices)
+        {
+            var info = _serviceManager.GetInfo(name, "", "");
+            if (info is null)
+                continue;
+
+            if (string.Equals(
+                    info.StartMode,
+                    "Disabled",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                disabled.Add(info.DisplayName);
+            }
+        }
+
+        return disabled;
+    }
+
     private async Task RefreshVirtualizationAsync()
     {
         try
@@ -752,6 +774,23 @@ public partial class MainWindow : Window
             UseVmwareVirtualizationButton.IsEnabled = true;
 
             RefreshVmwareServiceProfile();
+            var disabledWindowsVirtualization =
+                GetDisabledWindowsVirtualizationServices();
+
+            if (state.IsConfiguredForNormal &&
+                disabledWindowsVirtualization.Count > 0)
+            {
+                VirtualizationHelpText.Text =
+                    "Windows y Docker está seleccionado, pero encontramos componentes de WSL/virtualización deshabilitados: " +
+                    string.Join(", ", disabledWindowsVirtualization) +
+                    ". Pulsa “Usar Windows y Docker” para repararlos.";
+
+                VirtualizationRestartHintText.Text = state.PendingRestart
+                    ? "También hay un reinicio pendiente para terminar de aplicar el modo."
+                    : "No reinicies todavía: primero deja que la app repare esos componentes.";
+
+                return;
+            }
 
             if (state.PendingRestart)
             {
@@ -992,6 +1031,32 @@ public partial class MainWindow : Window
 
             await RefreshServicesAsync();
             await RefreshVirtualizationAsync();
+
+            var stateAfter = await _virtualization.GetStateAsync();
+            var disabledWindowsVirtualization =
+                stateAfter.IsConfiguredForNormal
+                    ? GetDisabledWindowsVirtualizationServices()
+                    : Array.Empty<string>();
+
+            if (!requiresRestart &&
+                stateAfter.IsConfiguredForNormal &&
+                disabledWindowsVirtualization.Count > 0)
+            {
+                var missingText = string.Join(
+                    ", ",
+                    disabledWindowsVirtualization);
+
+                EndActivity(
+                    title + ": requiere revisión",
+                    "Todavía hay componentes de WSL/virtualización deshabilitados: " + missingText,
+                    ActivityKind.Warning);
+
+                ShowToast(
+                    "El modo de Windows está elegido, pero WSL todavía necesita reparación.",
+                    ActivityKind.Warning);
+
+                return;
+            }
 
             if (requiresRestart)
             {
