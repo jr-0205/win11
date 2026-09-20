@@ -1,6 +1,7 @@
 <Window x:Class="Windows11Optimizer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="Windows 11 Optimizer" Height="780" Width="1160"
         MinHeight="620" MinWidth="760"
         WindowStartupLocation="CenterScreen"
@@ -19,11 +20,11 @@
 
         <Border Grid.Row="0"
                 Padding="12"
-                CornerRadius="8"
+                CornerRadius="12"
                 Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1"
-                Margin="0,0,0,8">
+                Margin="0,0,0,10">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Left">
                     <TextBlock Text="Windows 11 Optimizer"
@@ -51,26 +52,10 @@
             </DockPanel>
         </Border>
 
-        <Border Grid.Row="1"
-                x:Name="ToastBorder"
-                Visibility="Collapsed"
-                CornerRadius="7"
-                Padding="10,8"
-                Margin="0,0,0,8"
-                Background="{DynamicResource AccentBrush}">
-            <DockPanel>
-                <TextBlock x:Name="ToastIcon"
-                           Text="●"
-                           Foreground="White"
-                           FontWeight="Bold"
-                           Margin="0,0,8,0"/>
-                <TextBlock x:Name="ToastText"
-                           Text="Operación completada"
-                           Foreground="White"
-                           FontWeight="SemiBold"
-                           TextWrapping="Wrap"/>
-            </DockPanel>
-        </Border>
+        <ui:SnackbarPresenter x:Name="SnackbarPresenter"
+                              Grid.Row="1"
+                              Margin="0,0,0,8"
+                              HorizontalAlignment="Stretch"/>
 
         <TabControl Grid.Row="2">
             <TabItem Header="Panel">
