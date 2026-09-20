@@ -101,6 +101,20 @@ public partial class MainWindow : Window
         RefreshFocusStatus();
         UpdateAiAvailability();
 
+        if (_agent.IsAvailable)
+        {
+            try
+            {
+                // Inicia únicamente el agente ligero. Él mismo respeta
+                // la preferencia StartWithWindows guardada por el usuario.
+                _agent.StartAgent();
+            }
+            catch (Exception ex)
+            {
+                Log($"No se pudo iniciar el agente ligero: {ex.Message}");
+            }
+        }
+
         _timer.Start();
         _ = LoadWinUtilCatalogAsync(forceRefresh: false, showFeedback: false);
 
