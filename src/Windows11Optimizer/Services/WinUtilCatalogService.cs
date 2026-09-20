@@ -73,7 +73,10 @@ public sealed class WinUtilCatalogService
                 tweaksJson = tweaksTask.Result;
                 presetsJson = presetsTask.Result;
 
-                using (JsonDocument.Parse(tweaksJson)) { }
+                // WinUtil 26.08.19 contiene bloques PowerShell multilínea dentro de
+                // cadenas JSON. Los saltos de línea literales no son JSON estricto,
+                // así que normalizamos solo caracteres de control dentro de strings.
+                using (ParseWinUtilJson(tweaksJson)) { }
                 using (JsonDocument.Parse(presetsJson)) { }
 
                 await File.WriteAllTextAsync(_tweaksCache, tweaksJson, cancellationToken);
@@ -128,7 +131,7 @@ public sealed class WinUtilCatalogService
         var presetMembership = ParsePresetMembership(presetsJson);
         var rows = new List<WinUtilTweak>();
 
-        using var tweaksDoc = JsonDocument.Parse(tweaksJson);
+        using var tweaksDoc = ParseWinUtilJson(tweaksJson);
 
         foreach (var property in tweaksDoc.RootElement.EnumerateObject())
         {
@@ -180,6 +183,89 @@ public sealed class WinUtilCatalogService
             .ThenBy(x => x.Category, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(x => x.Content, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+    }
+
+    private static JsonDocument ParseWinUtilJson(string json)
+    {
+        try
+        {
+            return JsonDocument.Parse(json);
+        }
+        catch (JsonException)
+        {
+            var normalized = NormalizeControlCharactersInsideStrings(json);
+            return JsonDocument.Parse(normalized);
+        }
+    }
+
+    /// <summary>
+    /// Convierte únicamente caracteres de control literales que aparecen dentro
+    /// de strings JSON a sus secuencias escapadas equivalentes. No interpreta,
+    /// ejecuta ni modifica el contenido lógico de los scripts de WinUtil.
+    /// </summary>
+    private static string NormalizeControlCharactersInsideStrings(string input)
+    {
+        var output = new StringBuilder(input.Length + 256);
+        var insideString = false;
+        var escaped = false;
+
+        foreach (var ch in input)
+        {
+            if (!insideString)
+            {
+                output.Append(ch);
+
+                if (ch == '"')
+                {
+                    insideString = true;
+                    escaped = false;
+                }
+
+                continue;
+            }
+
+            if (escaped)
+            {
+                output.Append(ch);
+                escaped = false;
+                continue;
+            }
+
+            if (ch == '\\')
+            {
+                output.Append(ch);
+                escaped = true;
+                continue;
+            }
+
+            if (ch == '"')
+            {
+                output.Append(ch);
+                insideString = false;
+                continue;
+            }
+
+            switch (ch)
+            {
+                case '\r':
+                    output.Append("\\r");
+                    break;
+                case '\n':
+                    output.Append("\\n");
+                    break;
+                case '\t':
+                    output.Append("\\t");
+                    break;
+                default:
+                    if (ch < 0x20)
+                        output.Append($"\\u{(int)ch:X4}");
+                    else
+                        output.Append(ch);
+                    break;
+            }
+        }
+
+        return output.ToString();
     }
 
     private static Dictionary<string, HashSet<string>> ParsePresetMembership(string json)
