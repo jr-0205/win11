@@ -1912,3 +1912,119 @@ Después de aplicar `off`:
 - no mezclar la preparación VMware con la decisión BCD.
 
 Esta separación es una regla de arquitectura, no solo una decisión visual.
+
+
+---
+
+# 37. MÓDULO — IA SEGURA, APLICACIONES Y FOCUS BOOST
+
+## 37.1 Zona protegida
+
+Los módulos nuevos no deben modificar:
+
+- `VirtualizationModeCore`;
+- la semántica `hypervisorlaunchtype auto/off`;
+- la preparación Docker/WSL;
+- la preparación VMware.
+
+Docker ↔ VMware es una zona protegida.
+
+## 37.2 Examen con IA
+
+La IA:
+
+- analiza;
+- explica;
+- recomienda.
+
+La IA nunca:
+
+- ejecuta;
+- construye comandos que se ejecuten;
+- modifica Registro;
+- modifica servicios;
+- elimina aplicaciones;
+- elimina archivos;
+- cambia virtualización.
+
+La respuesta de IA debe limitarse a IDs del catálogo local.
+
+El backend debe volver a validar cada ID antes de mostrarlo y antes de permitir Aplicar.
+
+## 37.3 Catálogo seguro
+
+Cada acción visible debe declarar:
+
+- título comprensible;
+- qué hace;
+- impacto;
+- riesgo;
+- cómo se deshace;
+- si puede aplicarse automáticamente;
+- si puede ser seleccionada por IA.
+
+No incluir acciones Docker/VMware en el catálogo de IA.
+
+## 37.4 Aplicaciones
+
+Desinstalar significa:
+
+- iniciar el desinstalador registrado por Windows.
+
+No significa:
+
+- borrar una carpeta;
+- eliminar claves heurísticamente;
+- ejecutar comandos inventados por IA.
+
+Los residuos automáticos deben estar confirmados por una regla local específica y reversible.
+
+## 37.5 Focus Boost
+
+Focus Boost es temporal.
+
+Reglas:
+
+- target elegido explícitamente;
+- bloquear procesos críticos;
+- no usar High;
+- no usar Realtime;
+- guardar prioridad anterior;
+- restaurar al terminar el proceso;
+- persistir sesión para recuperación;
+- cambios en procesos secundarios solo mediante allowlist.
+
+Preferir reducir prioridad a suspender procesos.
+
+## 37.6 Agente
+
+El agente debe:
+
+- ser un EXE separado;
+- ejecutarse `asInvoker`;
+- no cargar WPF principal al iniciar Windows;
+- usar bandeja;
+- registrar hotkeys globales;
+- detectar conflictos de hotkeys;
+- permitir desactivar autoinicio;
+- lanzar la UI principal solo bajo petición.
+
+Hotkeys predeterminados:
+
+- Ctrl+Alt+Space → Mini Focus Boost;
+- Ctrl+Alt+O → UI completa.
+
+## 37.7 Privacidad IA
+
+Enviar solo los datos necesarios.
+
+No enviar por defecto:
+
+- claves;
+- tokens;
+- contenido de documentos;
+- líneas de comando completas;
+- rutas personales completas;
+- títulos de ventanas si no son necesarios.
+
+La clave API debe venir de una fuente externa segura; nunca hardcodearla.
