@@ -1832,3 +1832,23 @@ Preferir:
 - volver al estado anterior.
 
 Los términos técnicos pueden aparecer únicamente en una sección secundaria de información técnica.
+
+
+### Regla WSL / Docker
+
+El modo **Windows y Docker** debe reparar automáticamente componentes conocidos de WSL y virtualización de Windows si aparecen deshabilitados.
+
+La lógica debe:
+
+- detectar `WslService` y el nombre heredado `LxssManager`;
+- detectar `vmcompute` y `hns`;
+- detectar componentes instalados relacionados con Sandbox/Hyper-V;
+- cambiar únicamente `Disabled -> Manual`;
+- conservar cualquier configuración válida existente;
+- intentar iniciar WSL/HCS/HNS cuando sea posible;
+- aceptar que algunos componentes solo podrán iniciar después del reinicio que aplica el hipervisor normal.
+
+La interfaz no debe mostrar **Listo** únicamente porque `hypervisorlaunchtype=auto`.
+También debe considerar si los componentes necesarios quedaron deshabilitados.
+
+Nunca poner estos servicios en Disabled desde la optimización inteligente.
