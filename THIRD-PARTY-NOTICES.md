@@ -36,3 +36,17 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+## WPF UI
+
+Windows11Optimizer usa WPF UI para recursos Fluent, temas y notificaciones Snackbar en la interfaz WPF.
+
+- Proyecto: WPF UI
+- Repositorio: https://github.com/lepoco/wpfui
+- Paquete: WPF-UI
+- Versión usada: 4.3.0
+- Licencia: MIT
+- Copyright: Leszek Pomianowski and WPF UI Contributors
+
+WPF UI se distribuye bajo los términos de la licencia MIT del proyecto original.
