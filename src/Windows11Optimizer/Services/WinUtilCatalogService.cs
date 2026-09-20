@@ -334,23 +334,23 @@ public sealed class WinUtilCatalogService
         ];
 
         if (highRiskTerms.Any(text.Contains))
-            return "Alto";
+            return "Avanzado";
 
         if (scriptCount > 0 || serviceCount > 0)
-            return "Revisión";
+            return "Revisar";
 
         if (registryCount > 0)
-            return "Medio";
+            return "Precaución";
 
-        return "Informativo";
+        return "Solo consulta";
     }
 
     private static int RiskOrder(string risk) => risk switch
     {
-        "Informativo" => 0,
-        "Medio" => 1,
-        "Revisión" => 2,
-        "Alto" => 3,
+        "Solo consulta" => 0,
+        "Precaución" => 1,
+        "Revisar" => 2,
+        "Avanzado" => 3,
         _ => 4
     };
 
