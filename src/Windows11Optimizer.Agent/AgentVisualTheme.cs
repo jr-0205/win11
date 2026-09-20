@@ -71,16 +71,16 @@ internal static class AgentVisualTheme
                     checkBox.BackColor = Color.Transparent;
                     break;
 
-                case Panel panel:
-                    panel.BackColor = Background;
-                    break;
-
                 case TableLayoutPanel table:
                     table.BackColor = Background;
                     break;
 
                 case FlowLayoutPanel flow:
                     flow.BackColor = Background;
+                    break;
+
+                case Panel panel:
+                    panel.BackColor = Background;
                     break;
             }
 
