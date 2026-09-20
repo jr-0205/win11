@@ -49,6 +49,71 @@ public sealed class OptimizationService
     public Task StartAcerAsync(Action<string> log) => StartGroupAsync(SafeProfile.AcerOnDemandServices, log);
     public Task StopAcerAsync(Action<string> log) => StopGroupAsync(SafeProfile.AcerOnDemandServices, log);
 
+    public async Task SetSafeServiceStartupAsync(string name, string mode, Action<string> log)
+    {
+        ValidateSafeService(name);
+        await CreateBackupIfNeededAsync(log);
+
+        switch (mode.ToLowerInvariant())
+        {
+            case "manual":
+                await _services.SetStartupManualAsync(name);
+                log($"Inicio cambiado a Manual: {name}");
+                break;
+
+            case "automatic":
+            case "auto":
+                await _services.SetStartupAutomaticAsync(name);
+                log($"Inicio cambiado a Automático: {name}");
+                break;
+
+            case "disabled":
+                if (!SafeProfile.CanDisableService(name))
+                    throw new InvalidOperationException($"'{name}' no está aprobado para deshabilitarse.");
+
+                await _services.SetStartupDisabledAsync(name);
+                log($"Inicio cambiado a Deshabilitado: {name}");
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(mode), mode, "Modo de inicio no permitido.");
+        }
+    }
+
+    public async Task StartSafeServiceAsync(string name, Action<string> log)
+    {
+        ValidateSafeService(name);
+        await CreateBackupIfNeededAsync(log);
+
+        var info = _services.GetInfo(name, "", "");
+        if (info is null)
+            throw new InvalidOperationException($"El servicio '{name}' no está instalado.");
+
+        if (string.Equals(info.StartMode, "Disabled", StringComparison.OrdinalIgnoreCase))
+        {
+            await _services.SetStartupManualAsync(name);
+            log($"'{name}' estaba deshabilitado; se cambió a Manual para poder iniciarlo.");
+        }
+
+        await _services.StartAsync(name);
+        log($"Servicio iniciado: {name}");
+    }
+
+    public async Task StopSafeServiceAsync(string name, Action<string> log)
+    {
+        ValidateSafeService(name);
+        await CreateBackupIfNeededAsync(log);
+        await _services.StopAsync(name);
+        log($"Servicio detenido: {name}");
+    }
+
+    private static void ValidateSafeService(string name)
+    {
+        if (!SafeProfile.IsUserManageableService(name))
+            throw new InvalidOperationException(
+                $"El servicio '{name}' está fuera de la lista segura y no puede modificarse desde Windows11Optimizer.");
+    }
+
     public async Task RestoreAsync(Action<string> log)
     {
         var backup = await _backup.LoadAsync();
