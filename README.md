@@ -429,3 +429,24 @@ La limpieza de referencias huérfanas conserva el mismo motor reversible y disti
 Focus Boost también refuerza la protección de procesos. Además de la lista de procesos críticos, rechaza como objetivo procesos cuyo ejecutable se encuentre dentro del directorio de Windows. La prioridad máxima continúa siendo `AboveNormal`; nunca usa `High` ni `Realtime`.
 
 La lógica protegida Docker ↔ VMware no forma parte de estos cambios.
+
+
+## Renovación visual v0.8.2
+
+La interfaz principal integra **WPF UI 4.3.0** para acercar la aplicación al lenguaje visual Fluent de Windows 11 sin cambiar la lógica de optimización.
+
+Cambios principales:
+
+- recursos visuales Fluent para controles WPF;
+- tema claro/oscuro coordinado con WPF UI;
+- acento tomado de la personalización actual de Windows;
+- backdrop Mica cuando Windows lo permite;
+- notificaciones internas mediante `Snackbar` en lugar de la barra de aviso casera;
+- filas, selección y encabezados de tablas con mayor contraste;
+- superficies, bordes y estados de botones ajustados para dark mode;
+- Mini Focus Boost y configuración de hotkeys con una apariencia coherente y ligera;
+- avisos del agente mediante un popup compacto estilo Fluent en lugar de los globos clásicos de `NotifyIcon`.
+
+El agente continúa siendo WinForms/`asInvoker` y no carga WPF UI durante el inicio de Windows.
+
+La lógica Docker ↔ VMware no fue modificada por esta renovación visual.
