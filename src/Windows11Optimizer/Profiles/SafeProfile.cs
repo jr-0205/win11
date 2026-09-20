@@ -40,6 +40,16 @@ public static class SafeProfile
         "CmService"
     ];
 
+    // Estos pueden iniciarse inmediatamente cuando existen y el hipervisor
+    // de Windows ya está disponible en la sesión actual.
+    public static readonly string[] WindowsVirtualizationStartNowServices =
+    [
+        "WslService",
+        "LxssManager",
+        "vmcompute",
+        "hns"
+    ];
+
     public static readonly string[] AcerOnDemandServices =
     [
         "AcerCCAgentSvis",
