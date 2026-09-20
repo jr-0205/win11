@@ -134,7 +134,161 @@ public partial class MainWindow : Window
 
     private void RefreshStartup()
     {
-        StartupGrid.ItemsSource = _startup.GetEntries();
+        var entries = _startup.GetEntries();
+        StartupGrid.ItemsSource = entries;
+
+        var orphanedCount = entries.Count(x => x.IsOrphaned);
+
+        StartupSummaryText.Text = orphanedCount switch
+        {
+            0 => $"Se detectaron {entries.Count} entradas de inicio. No encontramos referencias huérfanas confirmadas.",
+            1 => $"Se detectaron {entries.Count} entradas de inicio. Hay 1 entrada huérfana que puede limpiarse de forma segura.",
+            _ => $"Se detectaron {entries.Count} entradas de inicio. Hay {orphanedCount} entradas huérfanas que pueden revisarse."
+        };
+
+        RestoreStartupEntryButton.IsEnabled = _startup.HasRestorableEntry;
+    }
+
+    private void RefreshStartup_Click(object sender, RoutedEventArgs e)
+    {
+        BeginActivity(
+            "Actualizando programas de inicio",
+            "Comprobando si los programas registrados todavía existen…");
+
+        try
+        {
+            RefreshStartup();
+
+            EndActivity(
+                "Programas de inicio actualizados",
+                StartupSummaryText.Text,
+                ActivityKind.Success);
+
+            ShowToast(
+                "Lista de inicio actualizada.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error actualizando inicio de Windows: {ex.Message}");
+
+            EndActivity(
+                "No se pudo actualizar el inicio",
+                ex.Message,
+                ActivityKind.Error);
+
+            ShowToast(
+                "No se pudo actualizar la lista de inicio.",
+                ActivityKind.Error);
+        }
+    }
+
+    private void RemoveOrphanedStartup_Click(object sender, RoutedEventArgs e)
+    {
+        if (StartupGrid.SelectedItem is not StartupEntry entry)
+        {
+            ShowToast(
+                "Selecciona primero una entrada de inicio.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        if (!entry.CanRemoveSafely)
+        {
+            var message = entry.IsOrphaned
+                ? "La entrada parece huérfana, pero su origen no permite una limpieza automática segura."
+                : "Esta entrada no está confirmada como huérfana. No se eliminará.";
+
+            ShowToast(message, ActivityKind.Warning);
+            return;
+        }
+
+        var target = string.IsNullOrWhiteSpace(entry.TargetPath)
+            ? entry.Command
+            : entry.TargetPath;
+
+        var answer = MessageBox.Show(
+            $"'{entry.Name}' apunta a un programa que ya no existe:\n\n{target}\n\n" +
+            "Se quitará únicamente su referencia de inicio de Windows. " +
+            "Antes se guardará una copia para poder restaurarla.\n\n¿Continuar?",
+            "Quitar entrada huérfana",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            _startup.RemoveOrphanedEntry(entry);
+
+            Log($"Entrada de inicio huérfana eliminada: {entry.Name} | {entry.Source}");
+            RefreshStartup();
+
+            ShowToast(
+                $"Se quitó '{entry.Name}' del inicio de Windows.",
+                ActivityKind.Success);
+
+            EndActivity(
+                "Entrada huérfana eliminada",
+                "La referencia antigua fue retirada y se guardó una copia.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error eliminando entrada de inicio: {ex.Message}");
+
+            ShowToast(
+                "No se pudo quitar la entrada seleccionada.",
+                ActivityKind.Error);
+
+            MessageBox.Show(
+                ex.Message,
+                "Quitar entrada huérfana",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void RestoreStartupEntry_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_startup.HasRestorableEntry)
+        {
+            RestoreStartupEntryButton.IsEnabled = false;
+            ShowToast(
+                "No hay entradas eliminadas por la app pendientes de restaurar.",
+                ActivityKind.Info);
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            "Se restaurará la última entrada de inicio eliminada por Windows11Optimizer.\n\n¿Continuar?",
+            "Restaurar entrada de inicio",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            var restored = _startup.RestoreLastRemoved();
+            RefreshStartup();
+
+            Log($"Entrada de inicio restaurada: {restored.Name}");
+
+            ShowToast(
+                $"Se restauró '{restored.Name}'.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error restaurando entrada de inicio: {ex.Message}");
+
+            ShowToast(
+                "No se pudo restaurar la entrada.",
+                ActivityKind.Error);
+        }
     }
 
     private void RefreshBackupStatus()
