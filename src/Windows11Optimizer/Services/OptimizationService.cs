@@ -56,6 +56,17 @@ public sealed class OptimizationService
 
         foreach (var name in SafeProfile.VmwareServices)
             await SetOnDemandIfInstalledAsync(name, log);
+
+        foreach (var name in SafeProfile.WindowsVirtualizationRepairServices)
+        {
+            var startNow = SafeProfile.WindowsVirtualizationStartNowServices
+                .Contains(name, StringComparer.OrdinalIgnoreCase);
+
+            await RepairWindowsVirtualizationServiceAsync(
+                name,
+                startNow,
+                log);
+        }
     }
 
     /// <summary>
@@ -244,6 +255,61 @@ public sealed class OptimizationService
         {
             throw new InvalidOperationException(
                 $"El componente '{name}' está fuera de la lista segura.");
+        }
+    }
+
+    private async Task RepairWindowsVirtualizationServiceAsync(
+        string name,
+        bool startNow,
+        Action<string> log)
+    {
+        try
+        {
+            var info = _services.GetInfo(name, "", "");
+
+            if (info is null)
+            {
+                log($"Componente de Windows no instalado: {name}");
+                return;
+            }
+
+            if (string.Equals(
+                    info.StartMode,
+                    "Disabled",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                await _services.SetStartupManualAsync(name);
+                log($"Componente de Windows reparado y disponible: {name}");
+                info = _services.GetInfo(name, "", "") ?? info;
+            }
+            else
+            {
+                log($"Configuración válida conservada: {name} ({info.StartMode})");
+            }
+
+            if (!startNow ||
+                string.Equals(
+                    info.State,
+                    "Running",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            try
+            {
+                await _services.StartAsync(name);
+                log($"Componente iniciado para WSL/Docker: {name}");
+            }
+            catch (Exception ex)
+            {
+                // Puede requerir el reinicio que aplica hypervisorlaunchtype=auto.
+                log($"'{name}' quedó disponible, pero no pudo iniciarse todavía: {ex.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            log($"No se pudo reparar {name}: {ex.Message}");
         }
     }
 
