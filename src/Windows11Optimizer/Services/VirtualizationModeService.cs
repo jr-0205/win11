@@ -42,6 +42,7 @@ public sealed class VirtualizationModeService
 
         var bootTimeUtc = GetBootTimeUtc();
         var hypervisorPresent = GetHypervisorPresentNow();
+        var (vbsStatus, memoryIntegrityRunning) = GetDeviceGuardState();
         var pendingRestart = GetPendingRestart(launchType, bootTimeUtc);
 
         // OFF + hipervisor todavía activo significa que el cambio está preparado
@@ -58,13 +59,16 @@ public sealed class VirtualizationModeService
             HypervisorLaunchType = launchType,
             IsExplicitlyConfigured = explicitValue,
             HypervisorPresentNow = hypervisorPresent,
-            PendingRestart = pendingRestart
+            PendingRestart = pendingRestart,
+            VbsStatus = vbsStatus,
+            MemoryIntegrityRunning = memoryIntegrityRunning
         };
     }
 
     /// <summary>
-    /// Devuelve true únicamente cuando el cambio necesita un reinicio para
-    /// modificar el estado efectivo de esta sesión.
+    /// Modo normal conserva disponibles Hyper-V, WSL2, Virtual Machine Platform
+    /// y las funciones de seguridad que dependan del hipervisor de Windows.
+    /// No modifica las políticas de VBS ni Integridad de memoria.
     /// </summary>
     public async Task<bool> SetNormalAsync()
     {
@@ -81,8 +85,6 @@ public sealed class VirtualizationModeService
 
         EnsureSuccess(result, "No se pudo preparar el modo normal.");
 
-        // Si el hipervisor ya está activo, el equipo ya está funcionalmente
-        // en modo normal y no hace falta reiniciar por este cambio.
         var requiresRestart = !before.HypervisorPresentNow;
         SavePendingState("Auto", requiresRestart);
 
@@ -90,8 +92,10 @@ public sealed class VirtualizationModeService
     }
 
     /// <summary>
-    /// Devuelve true únicamente cuando el hipervisor de Windows sigue activo
-    /// y por tanto hace falta reiniciar para pasar al modo VMware.
+    /// Modo VMware evita que el hipervisor de Windows se inicie en el próximo
+    /// arranque. No deshabilita ni elimina las políticas de VBS/HVCI: esas
+    /// preferencias permanecen configuradas para volver a funcionar cuando
+    /// se restaure el modo normal.
     /// </summary>
     public async Task<bool> SetVmwareDirectAsync()
     {
@@ -116,8 +120,6 @@ public sealed class VirtualizationModeService
 
         EnsureSuccess(result, "No se pudo preparar el modo VMware.");
 
-        // Si el hipervisor no está activo en esta sesión, VMware ya puede
-        // trabajar sin él; no forzamos un reinicio innecesario.
         var requiresRestart = before.HypervisorPresentNow;
         SavePendingState("Off", requiresRestart);
 
@@ -240,16 +242,12 @@ public sealed class VirtualizationModeService
                 return false;
             }
 
-            // Si Windows ya reinició desde que se solicitó el cambio,
-            // la solicitud pendiente ya fue consumida.
             if (Math.Abs((pending.BootTimeUtc - bootTimeUtc).TotalMinutes) > 2)
             {
                 DeletePendingFile();
                 return false;
             }
 
-            // Si otra herramienta cambió BCD después de nosotros, no mostramos
-            // un reinicio pendiente que ya no corresponde.
             if (!NormalizeMode(pending.RequestedMode).Equals(
                     NormalizeMode(configuredMode),
                     StringComparison.OrdinalIgnoreCase))
@@ -319,6 +317,47 @@ public sealed class VirtualizationModeService
         catch
         {
             return false;
+        }
+    }
+
+    private static (int? VbsStatus, bool? MemoryIntegrityRunning) GetDeviceGuardState()
+    {
+        try
+        {
+            var scope = new ManagementScope(
+                @"\\.\root\Microsoft\Windows\DeviceGuard");
+            scope.Connect();
+
+            using var searcher = new ManagementObjectSearcher(
+                scope,
+                new ObjectQuery(
+                    "SELECT VirtualizationBasedSecurityStatus, SecurityServicesRunning FROM Win32_DeviceGuard"));
+
+            using var results = searcher.Get();
+            var row = results.Cast<ManagementObject>().FirstOrDefault();
+
+            if (row is null)
+                return (null, null);
+
+            int? vbsStatus = row["VirtualizationBasedSecurityStatus"] is null
+                ? null
+                : Convert.ToInt32(row["VirtualizationBasedSecurityStatus"]);
+
+            bool? memoryIntegrityRunning = null;
+
+            if (row["SecurityServicesRunning"] is Array services)
+            {
+                memoryIntegrityRunning = services
+                    .Cast<object>()
+                    .Select(Convert.ToInt32)
+                    .Contains(2);
+            }
+
+            return (vbsStatus, memoryIntegrityRunning);
+        }
+        catch
+        {
+            return (null, null);
         }
     }
 
