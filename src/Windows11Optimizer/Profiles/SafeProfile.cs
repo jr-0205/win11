@@ -26,6 +26,20 @@ public static class SafeProfile
         "com.docker.service"
     ];
 
+    // Componentes de Windows usados por WSL2, Docker, Sandbox y Hyper-V.
+    // No se fuerzan a Manual si ya tienen una configuración válida.
+    // Solo se reparan cuando aparecen como Disabled.
+    public static readonly string[] WindowsVirtualizationRepairServices =
+    [
+        "WslService",
+        "LxssManager",
+        "vmcompute",
+        "hns",
+        "HvHost",
+        "vmms",
+        "CmService"
+    ];
+
     public static readonly string[] AcerOnDemandServices =
     [
         "AcerCCAgentSvis",
@@ -55,7 +69,9 @@ public static class SafeProfile
             .Distinct(StringComparer.OrdinalIgnoreCase);
 
     public static IEnumerable<string> AllModifiedServices =>
-        IntelligentOnDemandServices;
+        IntelligentOnDemandServices
+            .Concat(WindowsVirtualizationRepairServices)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
 
     public static IEnumerable<string> UserManageableServices =>
         IntelligentOnDemandServices;
