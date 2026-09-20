@@ -14,9 +14,9 @@ internal sealed class MiniFocusForm : Form
     {
         _focus = focus;
 
-        Text = "Mini Focus Boost";
-        Width = 620;
-        Height = 470;
+        Text = "Mini Focus Boost · Windows11Optimizer";
+        Width = 660;
+        Height = 500;
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(520, 380);
 
@@ -58,6 +58,8 @@ internal sealed class MiniFocusForm : Form
         Controls.Add(_processes);
         Controls.Add(buttons);
         Controls.Add(_status);
+
+        AgentVisualTheme.Apply(this);
 
         Shown += (_, _) =>
         {
