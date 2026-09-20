@@ -237,6 +237,121 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ServicesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ServicesGrid.SelectedItem is not ManagedService service)
+        {
+            SelectedServiceText.Text = "Ninguno";
+            return;
+        }
+
+        var suffix = SafeProfile.IsUserManageableService(service.Name)
+            ? " · editable"
+            : " · protegido";
+
+        SelectedServiceText.Text =
+            $"{service.DisplayName} ({service.Name}){suffix}";
+    }
+
+    private async void SetServiceManual_Click(object sender, RoutedEventArgs e)
+    {
+        var service = GetSelectedManageableServiceOrNotify();
+        if (service is null) return;
+
+        await RunOperationAsync(
+            $"Cambiando {service.DisplayName} a Manual",
+            "Guardando backup y cambiando únicamente el tipo de inicio…",
+            () => _optimizer.SetSafeServiceStartupAsync(service.Name, "manual", Log));
+    }
+
+    private async void SetServiceAutomatic_Click(object sender, RoutedEventArgs e)
+    {
+        var service = GetSelectedManageableServiceOrNotify();
+        if (service is null) return;
+
+        await RunOperationAsync(
+            $"Cambiando {service.DisplayName} a Automático",
+            "Guardando backup y habilitando el arranque automático…",
+            () => _optimizer.SetSafeServiceStartupAsync(service.Name, "automatic", Log));
+    }
+
+    private async void StartSelectedService_Click(object sender, RoutedEventArgs e)
+    {
+        var service = GetSelectedManageableServiceOrNotify();
+        if (service is null) return;
+
+        await RunOperationAsync(
+            $"Iniciando {service.DisplayName}",
+            "Iniciando el servicio seguro seleccionado…",
+            () => _optimizer.StartSafeServiceAsync(service.Name, Log));
+    }
+
+    private async void StopSelectedService_Click(object sender, RoutedEventArgs e)
+    {
+        var service = GetSelectedManageableServiceOrNotify();
+        if (service is null) return;
+
+        await RunOperationAsync(
+            $"Deteniendo {service.DisplayName}",
+            "Deteniendo el servicio seguro seleccionado…",
+            () => _optimizer.StopSafeServiceAsync(service.Name, Log));
+    }
+
+    private async void DisableSelectedService_Click(object sender, RoutedEventArgs e)
+    {
+        var service = GetSelectedManageableServiceOrNotify();
+        if (service is null) return;
+
+        if (!SafeProfile.CanDisableService(service.Name))
+        {
+            ShowToast(
+                "Este servicio no está aprobado para quedar deshabilitado.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            $"Se impedirá que '{service.DisplayName}' arranque automáticamente.\n\n" +
+            "Podrás volver a Manual o Automático desde esta misma pantalla. ¿Continuar?",
+            "Deshabilitar arranque",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes)
+        {
+            ShowToast("Cambio cancelado.", ActivityKind.Info);
+            return;
+        }
+
+        await RunOperationAsync(
+            $"Deshabilitando arranque de {service.DisplayName}",
+            "Guardando backup y cambiando el inicio a Deshabilitado…",
+            () => _optimizer.SetSafeServiceStartupAsync(service.Name, "disabled", Log));
+    }
+
+    private ManagedService? GetSelectedManageableServiceOrNotify()
+    {
+        if (ServicesGrid.SelectedItem is not ManagedService service)
+        {
+            ShowToast(
+                "Selecciona primero un servicio de la tabla.",
+                ActivityKind.Warning);
+            return null;
+        }
+
+        if (!SafeProfile.IsUserManageableService(service.Name))
+        {
+            ShowToast(
+                $"'{service.DisplayName}' está protegido y Windows11Optimizer no permitirá modificarlo.",
+                ActivityKind.Warning);
+
+            Log($"Cambio bloqueado por política segura: {service.Name}");
+            return null;
+        }
+
+        return service;
+    }
+
     private async Task RunOperationAsync(
         string title,
         string detail,
