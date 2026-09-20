@@ -26,6 +26,8 @@ public partial class MainWindow : Window
     private readonly OptimizationService _optimizer;
     private readonly DiagnosticReportService _diagnostics;
     private readonly SmartAnalysisService _smartAnalysis;
+    private readonly SmartOptimizationService _smartOptimizer;
+    private SmartOptimizationPlan? _lastOptimizationPlan;
     private IReadOnlyList<WinUtilTweak> _winUtilAllTweaks = Array.Empty<WinUtilTweak>();
     private AutorunsAnalysisResult? _lastAutorunsAnalysis;
     private readonly DispatcherTimer _timer;
@@ -41,6 +43,10 @@ public partial class MainWindow : Window
         _optimizer = new OptimizationService(_serviceManager, _taskManager, _backup);
         _diagnostics = new DiagnosticReportService(_metrics, _serviceManager, _startup);
         _smartAnalysis = new SmartAnalysisService(_metrics, _startup, _autoruns);
+        _smartOptimizer = new SmartOptimizationService(
+            _serviceManager,
+            _taskManager,
+            _startup);
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _timer.Tick += async (_, _) => await RefreshMetricsAsync();
@@ -106,7 +112,7 @@ public partial class MainWindow : Window
         var compact = ActualWidth < 940;
 
         MetricsGrid.Columns = compact ? 2 : 4;
-        VirtualizationStatusGrid.Columns = compact ? 2 : 3;
+        VirtualizationStatusGrid.Columns = compact ? 1 : 2;
         ActivityProgress.Width = compact ? 120 : 180;
     }
 
@@ -129,43 +135,50 @@ public partial class MainWindow : Window
     {
         BeginActivity(
             "Analizando el equipo",
-            "Midiendo recursos, inicio de Windows y componentes bajo demanda…");
+            "Revisando recursos, inicio de Windows y componentes conocidos…");
 
         try
         {
             var snapshot = await _smartAnalysis.CaptureAsync(includeAutoruns: false);
+            var plan = await _smartOptimizer.AnalyzeAsync();
+            _lastOptimizationPlan = plan;
+
+            OptimizationPlanGrid.ItemsSource = plan.Opportunities;
+            SmartOptimizationSummaryText.Text = plan.Summary;
+            ApplySmartOptimizationButton.IsEnabled = plan.ApplicableCount > 0;
+
             var autoruns = await _autoruns.AnalyzeAsync();
             _lastAutorunsAnalysis = autoruns;
-
             AutorunsFindingsGrid.ItemsSource = autoruns.Entries;
-
-            var manageableRunning = CountRunningManageableServices();
-            var autorunsText = autoruns.Available
-                ? $"Autoruns: {autoruns.ThirdPartyCount} entradas de terceros, {autoruns.MissingCount} con archivo no encontrado."
-                : "Autoruns: no instalado (análisis avanzado opcional).";
+            UpdateAutorunsResult(autoruns);
 
             SmartAnalysisText.Text =
                 $"RAM: {snapshot.UsedRamGb:N2} de {snapshot.TotalRamGb:N2} GB ({snapshot.RamPercent:N1} %). " +
-                $"Procesos: {snapshot.ProcessCount}. Inicio básico: {snapshot.StartupEntryCount} entradas, " +
-                $"{snapshot.OrphanedStartupCount} huérfanas. Servicios bajo demanda activos: {manageableRunning}. " +
-                autorunsText;
-
-            UpdateAutorunsResult(autoruns);
+                $"Procesos: {snapshot.ProcessCount}. " +
+                $"Inicio: {snapshot.StartupEntryCount} elementos, {snapshot.OrphanedStartupCount} antiguos. " +
+                $"{plan.Summary}";
 
             EndActivity(
                 "Análisis completado",
-                "La app no realizó cambios; solo midió el estado actual.",
+                "No se realizaron cambios.",
                 ActivityKind.Success);
 
             ShowToast(
-                "Análisis completado. Revisa las oportunidades detectadas.",
+                plan.ApplicableCount > 0
+                    ? "Análisis listo. Hay recomendaciones disponibles."
+                    : "Análisis listo. No encontramos cambios necesarios.",
                 ActivityKind.Success);
         }
         catch (Exception ex)
         {
             Log($"Error en análisis inteligente: {ex.Message}");
-            EndActivity("Error analizando el equipo", ex.Message, ActivityKind.Error);
-            ShowToast("No se pudo completar el análisis.", ActivityKind.Error);
+            EndActivity(
+                "No se pudo completar el análisis",
+                ex.Message,
+                ActivityKind.Error);
+            ShowToast(
+                "No se pudo completar el análisis.",
+                ActivityKind.Error);
         }
     }
 
@@ -287,30 +300,14 @@ public partial class MainWindow : Window
 
     private async Task RefreshServicesAsync()
     {
-        await Task.Run(() =>
-        {
-            var rows = new List<ManagedService>();
+        var plan = await _smartOptimizer.AnalyzeAsync();
+        _lastOptimizationPlan = plan;
 
-            foreach (var name in SafeProfile.VmwareServices)
-            {
-                var info = _serviceManager.GetInfo(name, "VMware", "Bajo demanda");
-                if (info is not null) rows.Add(info);
-            }
+        OptimizationPlanGrid.ItemsSource = plan.Opportunities;
+        SmartOptimizationSummaryText.Text = plan.Summary;
+        ApplySmartOptimizationButton.IsEnabled = plan.ApplicableCount > 0;
 
-            foreach (var name in SafeProfile.AcerOnDemandServices)
-            {
-                var info = _serviceManager.GetInfo(name, "Acer", "Bajo demanda");
-                if (info is not null) rows.Add(info);
-            }
-
-            foreach (var name in SafeProfile.AcerProtectedServices)
-            {
-                var info = _serviceManager.GetInfo(name, "Acer", "Protegido / conservar");
-                if (info is not null) rows.Add(info);
-            }
-
-            Dispatcher.Invoke(() => ServicesGrid.ItemsSource = rows);
-        });
+        RefreshVmwareServiceProfile();
     }
 
     private void RefreshStartup()
