@@ -18,7 +18,8 @@ public sealed class AgentSettingsService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Windows11Optimizer");
 
-    private string SettingsFile => Path.Combine(_directory, "agent-settings.json");
+    private string SettingsFile =>
+        Path.Combine(_directory, "agent-settings.json");
 
     public AgentSettings Load()
     {
@@ -40,6 +41,7 @@ public sealed class AgentSettingsService
     public void Save(AgentSettings settings)
     {
         Directory.CreateDirectory(_directory);
+
         File.WriteAllText(
             SettingsFile,
             JsonSerializer.Serialize(
@@ -70,7 +72,7 @@ public sealed class AgentSettingsService
 
         key.SetValue(
             RunValueName,
-            $""{exe}" --agent",
+            $"\"{exe}\" --agent",
             RegistryValueKind.String);
     }
 }
