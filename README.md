@@ -328,3 +328,18 @@ La reparación es conservadora:
 - intenta iniciar WSL, Host Compute y Host Network cuando puede;
 - no deshabilita estos servicios desde la optimización inteligente;
 - no muestra “Listo” si siguen deshabilitados.
+
+
+## Contrato de cambio de virtualización
+
+Windows11Optimizer conserva el comportamiento del script original `VMwareMode.ps1` como núcleo del selector:
+
+- `hypervisorlaunchtype=auto` -> Windows y Docker.
+- `hypervisorlaunchtype=off` -> VMware.
+- solo `off` se interpreta como modo VMware.
+
+La preparación de servicios es una capa secundaria:
+
+- **Windows y Docker** repara WSL/Host Compute/Host Network únicamente si alguno quedó deshabilitado.
+- **VMware** prepara sus componentes después de guardar el modo `off`.
+- un fallo de esa preparación secundaria no revierte ni oculta el cambio BCD.
