@@ -233,7 +233,7 @@
                                                 Width="*"/>
                             <DataGridTextColumn Header="Qué hará la app"
                                                 Binding="{Binding Action}"
-                                                Width="1.4*"/>
+                                                Width="2*"/>
                         </DataGrid.Columns>
                     </DataGrid>
 
