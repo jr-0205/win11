@@ -10,7 +10,7 @@ using Windows11Optimizer.Models;
 using Windows11Optimizer.Profiles;
 using Windows11Optimizer.Services;
 using Wpf.Ui;
-using Wpf.Ui.Controls;
+using ControlAppearance = Wpf.Ui.Controls.ControlAppearance;
 
 namespace Windows11Optimizer;
 
