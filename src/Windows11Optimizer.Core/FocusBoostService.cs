@@ -11,6 +11,10 @@ public sealed class FocusBoostService : IDisposable
             "Idle", "System", "Registry", "smss", "csrss", "wininit",
             "services", "lsass", "winlogon", "svchost", "dwm", "fontdrvhost",
             "audiodg", "Memory Compression", "Secure System",
+            "explorer", "ShellExperienceHost", "StartMenuExperienceHost",
+            "SearchHost", "RuntimeBroker", "sihost", "taskhostw", "ctfmon",
+            "MsMpEng", "NisSrv", "SecurityHealthService",
+            "SecurityHealthSystray", "WUDFHost", "spoolsv",
             "Windows11Optimizer", "Windows11Optimizer.Agent"
         };
 
@@ -51,7 +55,7 @@ public sealed class FocusBoostService : IDisposable
                         continue;
 
                     var name = process.ProcessName;
-                    var allowed = !CriticalProcesses.Contains(name);
+                    var allowed = !IsProtectedTarget(process);
 
                     rows.Add(new FocusProcessInfo
                     {
@@ -128,11 +132,10 @@ public sealed class FocusBoostService : IDisposable
             using var target = Process.GetProcessById(targetPid);
             target.Refresh();
 
-            if (target.Id <= 4 ||
-                CriticalProcesses.Contains(target.ProcessName))
+            if (target.Id <= 4 || IsProtectedTarget(target))
             {
                 throw new InvalidOperationException(
-                    "Ese proceso está protegido y no puede usarse como objetivo de Focus Boost.");
+                    "Ese proceso pertenece a Windows o está protegido y no puede usarse como objetivo de Focus Boost.");
             }
 
             var originalPriority = target.PriorityClass;
@@ -347,6 +350,40 @@ public sealed class FocusBoostService : IDisposable
         catch
         {
             // El estado ya se intentó restaurar; el archivo puede reintentarse luego.
+        }
+    }
+
+    private static bool IsProtectedTarget(Process process)
+    {
+        try
+        {
+            if (CriticalProcesses.Contains(process.ProcessName))
+                return true;
+
+            var path = process.MainModule?.FileName;
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            var windowsDirectory = Environment.GetFolderPath(
+                Environment.SpecialFolder.Windows);
+
+            if (string.IsNullOrWhiteSpace(windowsDirectory))
+                return false;
+
+            var normalizedWindows = Path.GetFullPath(windowsDirectory)
+                .TrimEnd(Path.DirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+
+            var normalizedPath = Path.GetFullPath(path);
+
+            return normalizedPath.StartsWith(
+                normalizedWindows,
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            // Si no podemos leer la ruta, todavía aplican las protecciones por nombre.
+            return CriticalProcesses.Contains(process.ProcessName);
         }
     }
 
