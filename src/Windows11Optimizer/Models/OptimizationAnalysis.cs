@@ -55,3 +55,30 @@ public sealed class OptimizationSnapshot
     public int AutorunsMissingCount { get; init; }
     public bool AutorunsAvailable { get; init; }
 }
+
+
+public sealed class OptimizationOpportunity
+{
+    public string Id { get; init; } = "";
+    public string Title { get; init; } = "";
+    public string Status { get; init; } = "";
+    public string Action { get; init; } = "";
+    public string Category { get; init; } = "";
+    public bool CanApply { get; init; }
+}
+
+public sealed class SmartOptimizationPlan
+{
+    public DateTime GeneratedAt { get; init; }
+    public IReadOnlyList<OptimizationOpportunity> Opportunities { get; init; } =
+        Array.Empty<OptimizationOpportunity>();
+
+    public int ApplicableCount => Opportunities.Count(x => x.CanApply);
+
+    public string Summary => ApplicableCount switch
+    {
+        0 => "El equipo ya está usando la configuración recomendada en los componentes que podemos administrar con seguridad.",
+        1 => "Encontramos 1 ajuste que puede reducir actividad al iniciar Windows sin quitar funciones.",
+        _ => $"Encontramos {ApplicableCount} ajustes que pueden reducir actividad al iniciar Windows sin quitar funciones."
+    };
+}
