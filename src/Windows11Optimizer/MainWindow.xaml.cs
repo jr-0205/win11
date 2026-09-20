@@ -990,6 +990,54 @@ public partial class MainWindow : Window
         return null;
     }
 
+    private void DisableStartupEntry_Click(object sender, RoutedEventArgs e)
+    {
+        if (StartupGrid.SelectedItem is not StartupEntry entry)
+        {
+            ShowToast(
+                "Selecciona primero una entrada de inicio.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        if (!entry.CanDisableAtStartup)
+        {
+            ShowToast(
+                "Esta entrada no puede administrarse de forma reversible desde la app. Usa la configuración de Inicio de Windows.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            $"“{entry.Name}” dejará de abrirse automáticamente con Windows.{Environment.NewLine}{Environment.NewLine}" +
+            "El programa seguirá instalado y podrás restaurar esta entrada desde la misma pantalla. ¿Continuar?",
+            "No iniciar con Windows",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            _startup.DisableStartupEntry(entry);
+            RefreshStartup();
+
+            Log($"Inicio desactivado de forma reversible: {entry.Name} | {entry.Source}");
+
+            ShowToast(
+                $"'{entry.Name}' ya no iniciará automáticamente.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error desactivando entrada de inicio: {ex.Message}");
+            ShowToast(
+                "No se pudo cambiar esta entrada de inicio.",
+                ActivityKind.Error);
+        }
+    }
+
     private void RemoveOrphanedStartup_Click(object sender, RoutedEventArgs e)
     {
         if (StartupGrid.SelectedItem is not StartupEntry entry)
@@ -1069,7 +1117,7 @@ public partial class MainWindow : Window
         }
 
         var answer = MessageBox.Show(
-            "Se restaurará la última entrada de inicio eliminada por Windows11Optimizer.\n\n¿Continuar?",
+            "Se restaurará el último cambio de Inicio de Windows realizado por Windows11Optimizer.\n\n¿Continuar?",
             "Restaurar entrada de inicio",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
@@ -1082,10 +1130,13 @@ public partial class MainWindow : Window
             var restored = _startup.RestoreLastRemoved();
             RefreshStartup();
 
-            Log($"Entrada de inicio restaurada: {restored.Name}");
+            Log(
+                $"Entrada de inicio restaurada: {restored.Name} | motivo={restored.Reason}");
 
             ShowToast(
-                $"Se restauró '{restored.Name}'.",
+                restored.Reason == "DisabledByUser"
+                    ? $"'{restored.Name}' volverá a iniciar con Windows."
+                    : $"Se restauró '{restored.Name}'.",
                 ActivityKind.Success);
         }
         catch (Exception ex)
