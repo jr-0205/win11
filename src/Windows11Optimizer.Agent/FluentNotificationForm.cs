@@ -54,7 +54,7 @@ internal sealed class FluentNotificationForm : Form
             Height = 25,
             AutoEllipsis = true,
             Font = new Font(
-                SystemFonts.MessageBoxFont.FontFamily,
+                "Segoe UI",
                 10.5f,
                 FontStyle.Bold),
             ForeColor = ForeColor,
@@ -67,7 +67,7 @@ internal sealed class FluentNotificationForm : Form
             Dock = DockStyle.Fill,
             AutoEllipsis = true,
             Font = new Font(
-                SystemFonts.MessageBoxFont.FontFamily,
+                "Segoe UI",
                 9f,
                 FontStyle.Regular),
             ForeColor = Color.FromArgb(184, 191, 202),
