@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Security.Principal;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -236,6 +235,11 @@ public partial class MainWindow : Window
         object sender,
         SelectionChangedEventArgs e)
     {
+        UpdateAiRecommendationDetail();
+    }
+
+    private void UpdateAiRecommendationDetail()
+    {
         if (AiRecommendationGrid.SelectedItem is not AiRecommendationRow row)
         {
             AiRecommendationDetailText.Text =
@@ -254,7 +258,10 @@ public partial class MainWindow : Window
 
         ApplyAiRecommendationButton.IsEnabled =
             row.CanApply &&
-            !string.Equals(state, "Aplicado", StringComparison.OrdinalIgnoreCase);
+            !string.Equals(
+                state,
+                "Aplicado",
+                StringComparison.OrdinalIgnoreCase);
 
         RevertAiRecommendationButton.IsEnabled =
             _safeActions.HasBackup(row.ActionId);
@@ -290,12 +297,7 @@ public partial class MainWindow : Window
         {
             await _safeActions.ApplyAsync(row.ActionId);
             Log($"Ajuste seguro aplicado: {row.ActionId}");
-            AiRecommendationGrid_SelectionChanged(
-                AiRecommendationGrid,
-                new SelectionChangedEventArgs(
-                    Selector.SelectionChangedEvent,
-                    Array.Empty<object>(),
-                    Array.Empty<object>()));
+            UpdateAiRecommendationDetail();
             RefreshStartup();
             ShowToast($"Aplicado: {row.Title}.", ActivityKind.Success);
         }
@@ -315,12 +317,7 @@ public partial class MainWindow : Window
         {
             await _safeActions.RevertAsync(row.ActionId);
             Log($"Ajuste seguro restaurado: {row.ActionId}");
-            AiRecommendationGrid_SelectionChanged(
-                AiRecommendationGrid,
-                new SelectionChangedEventArgs(
-                    Selector.SelectionChangedEvent,
-                    Array.Empty<object>(),
-                    Array.Empty<object>()));
+            UpdateAiRecommendationDetail();
             ShowToast($"Deshecho: {row.Title}.", ActivityKind.Success);
         }
         catch (Exception ex)
