@@ -2028,3 +2028,33 @@ No enviar por defecto:
 - títulos de ventanas si no son necesarios.
 
 La clave API debe venir de una fuente externa segura; nunca hardcodearla.
+
+
+## 37.8 Administración reversible del inicio
+
+Para una entrada válida de inicio, la acción **No iniciar con Windows** debe:
+
+- limitarse a ubicaciones explícitamente soportadas;
+- guardar el valor exacto antes del cambio;
+- retirar únicamente la referencia de autoarranque;
+- no borrar el ejecutable;
+- no desinstalar la aplicación;
+- no eliminar carpetas;
+- permitir restauración exacta.
+
+Debe distinguirse una entrada desactivada por decisión del usuario de una entrada huérfana eliminada por limpieza.
+
+## 37.9 Protección adicional de Focus Boost
+
+La lista de nombres críticos no es suficiente.
+
+Antes de aceptar un proceso como objetivo:
+
+- volver a validar el PID;
+- validar nombre y hora de inicio;
+- rechazar procesos críticos por nombre;
+- rechazar procesos cuyo ejecutable esté dentro del directorio de Windows cuando la ruta pueda comprobarse;
+- si no puede leerse la ruta, conservar las protecciones por nombre;
+- nunca elevar a High o Realtime.
+
+Esta validación debe ejecutarse tanto al mostrar candidatos como inmediatamente antes de aplicar Focus Boost.
