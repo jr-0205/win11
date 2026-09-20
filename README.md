@@ -245,3 +245,29 @@ Opciones aplicables en v0.5:
 Antes de aplicar cada ajuste se guarda el valor actual. El botón **Deshacer** restaura ese valor.
 
 Las demás opciones del catálogo fijado siguen disponibles mediante **Mostrar opciones avanzadas y de consulta**, pero no ejecutan scripts remotos ni `irm | iex`.
+
+
+## Modos de virtualización v0.6
+
+La sección **Máquinas virtuales** distingue dos perfiles:
+
+### Modo normal
+
+Configura `hypervisorlaunchtype=auto` para dejar disponible el hipervisor de Windows. Está pensado para escenarios que dependen de la virtualización de Windows, como Docker Desktop con WSL2/Hyper-V, Hyper-V, Windows Sandbox y funciones VBS cuando estén configuradas.
+
+### Modo VMware
+
+Configura `hypervisorlaunchtype=off` para el próximo arranque y prepara los servicios principales de VMware:
+
+- `VMAuthdService`
+- `VMnetDHCP`
+- `VMware NAT Service`
+
+Opcionalmente puede activar:
+
+- `VMUSBArbService` para paso de dispositivos USB.
+- `VMwareAutostartService` para autoinicio de máquinas virtuales configuradas.
+
+La aplicación **no elimina ni modifica las políticas de VBS, Integridad de memoria o Credential Guard** al cambiar a Modo VMware. Solo cambia el arranque del hipervisor mediante BCD. La pantalla consulta de forma independiente el estado de VBS e Integridad de memoria y sigue detectando si hace falta reiniciar.
+
+Los estados originales de los servicios administrados se incorporan al backup para poder restaurarlos.
