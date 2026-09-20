@@ -1,6 +1,5 @@
 using System.Management;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Windows11Optimizer.Models;
 
 namespace Windows11Optimizer.Services;
@@ -30,15 +29,13 @@ public sealed class VirtualizationModeService
                 "No se pudo consultar la configuración de arranque. " +
                 result.Error + result.Output);
 
-        // El nombre del elemento BCD es estable aunque Windows esté en español.
-        var match = Regex.Match(
-            result.Output,
-            @"(?im)^\s*hypervisorlaunchtype\s+(?<value>\S+)\s*$");
+        // Contrato heredado de VMwareMode.ps1:
+        // solo hypervisorlaunchtype=off significa VMware.
+        var explicitValue =
+            VirtualizationModeCore.HasExplicitValue(result.Output);
 
-        var explicitValue = match.Success;
-        var launchType = explicitValue
-            ? NormalizeMode(match.Groups["value"].Value)
-            : "Auto";
+        var launchType =
+            VirtualizationModeCore.GetConfiguredValue(result.Output);
 
         var bootTimeUtc = GetBootTimeUtc();
         var hypervisorPresent = GetHypervisorPresentNow();
@@ -81,7 +78,7 @@ public sealed class VirtualizationModeService
 
         var result = await CommandRunner.RunAsync(
             "bcdedit.exe",
-            ["/set", "{current}", "hypervisorlaunchtype", "auto"]);
+            ["/set", "{current}", "hypervisorlaunchtype", VirtualizationModeCore.NormalBcdValue]);
 
         EnsureSuccess(result, "No se pudo preparar el modo normal.");
 
@@ -116,7 +113,7 @@ public sealed class VirtualizationModeService
 
         var result = await CommandRunner.RunAsync(
             "bcdedit.exe",
-            ["/set", "{current}", "hypervisorlaunchtype", "off"]);
+            ["/set", "{current}", "hypervisorlaunchtype", VirtualizationModeCore.VmwareBcdValue]);
 
         EnsureSuccess(result, "No se pudo preparar el modo VMware.");
 
@@ -141,12 +138,12 @@ public sealed class VirtualizationModeService
 
         var before = await GetStateAsync();
         var targetMode = backup.HadExplicitValue
-            ? NormalizeMode(backup.OriginalValue)
+            ? VirtualizationModeCore.NormalizeValue(backup.OriginalValue)
             : "Auto";
 
         var alreadyConfigured =
             string.Equals(
-                NormalizeMode(before.HypervisorLaunchType),
+                VirtualizationModeCore.NormalizeValue(before.HypervisorLaunchType),
                 targetMode,
                 StringComparison.OrdinalIgnoreCase);
 
@@ -248,8 +245,8 @@ public sealed class VirtualizationModeService
                 return false;
             }
 
-            if (!NormalizeMode(pending.RequestedMode).Equals(
-                    NormalizeMode(configuredMode),
+            if (!VirtualizationModeCore.NormalizeValue(pending.RequestedMode).Equals(
+                    VirtualizationModeCore.NormalizeValue(configuredMode),
                     StringComparison.OrdinalIgnoreCase))
             {
                 DeletePendingFile();
@@ -279,7 +276,7 @@ public sealed class VirtualizationModeService
         {
             CreatedAt = DateTime.Now,
             BootTimeUtc = GetBootTimeUtc(),
-            RequestedMode = NormalizeMode(requestedMode)
+            RequestedMode = VirtualizationModeCore.NormalizeValue(requestedMode)
         };
 
         File.WriteAllText(
@@ -382,11 +379,6 @@ public sealed class VirtualizationModeService
 
         return DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount64);
     }
-
-    private static string NormalizeMode(string value) =>
-        value.Equals("Off", StringComparison.OrdinalIgnoreCase)
-            ? "Off"
-            : "Auto";
 
     private static void EnsureSuccess(
         (int ExitCode, string Output, string Error) result,
