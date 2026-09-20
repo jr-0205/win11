@@ -41,13 +41,23 @@ public sealed class VirtualizationModeService
             : "Auto";
 
         var bootTimeUtc = GetBootTimeUtc();
+        var hypervisorPresent = GetHypervisorPresentNow();
         var pendingRestart = GetPendingRestart(launchType, bootTimeUtc);
+
+        // OFF + hipervisor todavía activo significa que el cambio está preparado
+        // pero esta sesión aún no lo ha aplicado, incluso si se modificó fuera
+        // de Windows11Optimizer.
+        if (launchType.Equals("Off", StringComparison.OrdinalIgnoreCase) &&
+            hypervisorPresent)
+        {
+            pendingRestart = true;
+        }
 
         return new VirtualizationModeState
         {
             HypervisorLaunchType = launchType,
             IsExplicitlyConfigured = explicitValue,
-            HypervisorPresentNow = GetHypervisorPresentNow(),
+            HypervisorPresentNow = hypervisorPresent,
             PendingRestart = pendingRestart
         };
     }
@@ -88,7 +98,15 @@ public sealed class VirtualizationModeService
         var before = await GetStateAsync();
 
         if (before.IsConfiguredForVmware)
-            return before.PendingRestart;
+        {
+            var requiresExistingRestart =
+                before.PendingRestart || before.HypervisorPresentNow;
+
+            if (requiresExistingRestart)
+                SavePendingState("Off", true);
+
+            return requiresExistingRestart;
+        }
 
         await SaveBackupIfMissingAsync(before);
 
@@ -131,7 +149,19 @@ public sealed class VirtualizationModeService
                 StringComparison.OrdinalIgnoreCase);
 
         if (alreadyConfigured)
-            return before.PendingRestart;
+        {
+            var targetIsAlreadyOff =
+                targetMode.Equals("Off", StringComparison.OrdinalIgnoreCase);
+
+            var requiresExistingRestart = targetIsAlreadyOff
+                ? before.PendingRestart || before.HypervisorPresentNow
+                : before.PendingRestart;
+
+            if (requiresExistingRestart)
+                SavePendingState(targetMode, true);
+
+            return requiresExistingRestart;
+        }
 
         (int ExitCode, string Output, string Error) result;
 
