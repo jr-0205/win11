@@ -11,6 +11,7 @@ using Windows11Optimizer.Profiles;
 using Windows11Optimizer.Services;
 using Wpf.Ui;
 using ControlAppearance = Wpf.Ui.Controls.ControlAppearance;
+using AppThemeService = Windows11Optimizer.Services.ThemeService;
 
 namespace Windows11Optimizer;
 
@@ -25,7 +26,7 @@ public partial class MainWindow : Window
     private readonly WinUtilNativeService _winUtilNative = new();
     private readonly AutorunsService _autoruns = new();
     private readonly VirtualizationModeService _virtualization = new();
-    private readonly ThemeService _theme = new();
+    private readonly AppThemeService _theme = new();
     private readonly InstalledAppService _installedApps = new();
     private readonly OpenAiAnalysisService _openAi = new();
     private readonly AgentIntegrationService _agent = new();
