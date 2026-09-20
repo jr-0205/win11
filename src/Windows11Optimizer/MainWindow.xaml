@@ -123,114 +123,131 @@
                             </Border>
                         </UniformGrid>
 
-                        <GroupBox Header="Análisis inteligente">
+                        <Border Margin="8"
+                                Padding="16"
+                                CornerRadius="8"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1">
                             <StackPanel>
+                                <TextBlock Text="Estado del equipo"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"/>
                                 <TextBlock x:Name="SmartAnalysisText"
-                                           Margin="4"
-                                           TextWrapping="Wrap"
-                                           Text="Pulsa “Analizar equipo” para buscar oportunidades reales antes de cambiar nada."/>
-                                <WrapPanel Margin="0,6,0,0">
-                                    <Button Content="Analizar equipo"
-                                            Click="AnalyzeComputer_Click"/>
-                                    <Button Content="Obtener Autoruns"
-                                            Click="OpenAutorunsDownload_Click"
-                                            ToolTip="Abre la página oficial de Microsoft Sysinternals."/>
-                                </WrapPanel>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="Optimización recomendada">
-                            <StackPanel>
-                                <TextBlock TextWrapping="Wrap" Margin="4">
-                                    Reduce procesos y servicios que no necesitas todo el tiempo. La app conserva seguridad, actualizaciones, audio, Wi-Fi, Bluetooth, touchpad y otras funciones importantes.
-                                </TextBlock>
-                                <TextBlock x:Name="OptimizationResultText"
-                                           Margin="4,8,4,0"
+                                           Margin="0,6,0,0"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource MutedForegroundBrush}"
-                                           Text="Todavía no se ha ejecutado una optimización en esta sesión."/>
-                                <WrapPanel Margin="0,8,0,0">
-                                    <Button Content="Optimizar ahora" Click="OptimizeSafe_Click"/>
-                                    <Button Content="Deshacer cambios" Click="Restore_Click"/>
-                                    <Button Content="Crear reporte del equipo" Click="ExportDiagnostic_Click"/>
+                                           Text="Analizando los componentes que pueden optimizarse sin quitar funciones…"/>
+                                <WrapPanel Margin="0,12,0,0">
+                                    <Button Content="Analizar ahora"
+                                            Click="AnalyzeComputer_Click"/>
+                                    <Button Content="Crear reporte"
+                                            Click="ExportDiagnostic_Click"/>
                                 </WrapPanel>
                             </StackPanel>
-                        </GroupBox>
+                        </Border>
 
-                        <GroupBox Header="Accesos rápidos">
-                            <WrapPanel>
-                                <Button Content="Configuración de inicio de Windows" Click="OpenStartupSettings_Click"/>
-                                <Button Content="Administrador de tareas" Click="OpenTaskManager_Click"/>
-                                <Button Content="Servicios" Click="OpenServices_Click"/>
-                            </WrapPanel>
-                        </GroupBox>
+                        <Border Margin="8"
+                                Padding="16"
+                                CornerRadius="8"
+                                Background="{DynamicResource SurfaceAltBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1">
+                            <TextBlock TextWrapping="Wrap"
+                                       Text="La optimización de esta app prioriza mantener todo disponible. Los componentes aprobados dejan de iniciarse siempre con Windows y pasan a funcionar cuando una aplicación los necesita."/>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="Servicios">
+            <TabItem Header="Optimización">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Margin="0,0,0,8">
-                        <TextBlock FontWeight="SemiBold"
-                                   Text="Servicios en segundo plano"/>
-                        <TextBlock Margin="0,3,0,5"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource MutedForegroundBrush}"
-                                   Text="Aquí puedes decidir qué servicios deben iniciar con Windows y cuáles solo deben funcionar cuando realmente los necesites. La app bloquea automáticamente los servicios que no es seguro modificar."/>
-                        <WrapPanel>
-                            <Button Content="Activar VMware" Click="StartVmware_Click"/>
-                            <Button Content="Pausar VMware" Click="StopVmware_Click"/>
-                            <Button Content="Activar utilidades Acer" Click="StartAcer_Click"/>
-                            <Button Content="Pausar utilidades Acer" Click="StopAcer_Click"/>
-                            <Button Content="Actualizar lista" Click="RefreshServices_Click"/>
-                        </WrapPanel>
-                    </StackPanel>
-
-                    <Border Grid.Row="1"
-                            Padding="8"
+                    <Border Grid.Row="0"
+                            Padding="14"
                             Margin="0,0,0,8"
-                            CornerRadius="7"
+                            CornerRadius="8"
                             Background="{DynamicResource SurfaceBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1">
-                        <DockPanel>
-                            <StackPanel DockPanel.Dock="Left" Margin="0,0,10,0">
-                                <TextBlock Text="Servicio seleccionado" FontSize="11" Foreground="{DynamicResource MutedForegroundBrush}"/>
-                                <TextBlock x:Name="SelectedServiceText" Text="Ninguno" FontWeight="SemiBold"/>
-                            </StackPanel>
-                            <WrapPanel DockPanel.Dock="Right">
-                                <Button Content="Solo cuando se necesite (Manual)" Click="SetServiceManual_Click" ToolTip="No arranca por sí solo, pero una aplicación puede iniciarlo cuando lo necesite."/>
-                                <Button Content="Iniciar con Windows (Automático)" Click="SetServiceAutomatic_Click" ToolTip="Windows intentará iniciarlo durante el arranque."/>
-                                <Button Content="Iniciar ahora" Click="StartSelectedService_Click"/>
-                                <Button Content="Detener ahora" Click="StopSelectedService_Click"/>
-                                <Button Content="No iniciar automáticamente" Click="DisableSelectedService_Click" ToolTip="Disponible solo para servicios bajo demanda aprobados."/>
+                        <StackPanel>
+                            <TextBlock Text="Optimización inteligente"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource MutedForegroundBrush}"
+                                       Text="La app revisa únicamente componentes conocidos y reversibles. No apaga seguridad, audio, red, actualizaciones ni funciones de Windows. Cuando es posible, deja las utilidades disponibles para que se inicien solo cuando otra aplicación las necesite."/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1"
+                            Padding="12"
+                            Margin="0,0,0,8"
+                            CornerRadius="8"
+                            Background="{DynamicResource SurfaceAltBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock x:Name="SmartOptimizationSummaryText"
+                                       Text="Preparando análisis…"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock x:Name="OptimizationResultText"
+                                       Margin="0,5,0,0"
+                                       Text="Todavía no se han aplicado cambios en esta sesión."
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource MutedForegroundBrush}"/>
+                            <WrapPanel Margin="0,10,0,0">
+                                <Button Content="Analizar"
+                                        Click="AnalyzeOptimization_Click"/>
+                                <Button x:Name="ApplySmartOptimizationButton"
+                                        Content="Aplicar recomendaciones"
+                                        Click="ApplySmartOptimization_Click"
+                                        IsEnabled="False"/>
+                                <Button Content="Deshacer cambios"
+                                        Click="Restore_Click"/>
                             </WrapPanel>
-                        </DockPanel>
+                        </StackPanel>
                     </Border>
 
                     <DataGrid Grid.Row="2"
-                              x:Name="ServicesGrid"
+                              x:Name="OptimizationPlanGrid"
                               AutoGenerateColumns="False"
                               IsReadOnly="True"
                               CanUserAddRows="False"
                               SelectionMode="Single"
-                              SelectionChanged="ServicesGrid_SelectionChanged"
                               AlternationCount="2">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Grupo" Binding="{Binding Group}" Width="110"/>
-                            <DataGridTextColumn Header="Servicio" Binding="{Binding DisplayName}" Width="*"/>
-                            <DataGridTextColumn Header="Nombre técnico" Binding="{Binding Name}" Width="220"/>
-                            <DataGridTextColumn Header="Estado" Binding="{Binding StateDisplay}" Width="110"/>
-                            <DataGridTextColumn Header="Cómo inicia" Binding="{Binding StartModeDisplay}" Width="110"/>
-                            <DataGridTextColumn Header="Recomendación" Binding="{Binding PolicyDisplay}" Width="200"/>
+                            <DataGridTextColumn Header="Elemento"
+                                                Binding="{Binding Title}"
+                                                Width="220"/>
+                            <DataGridTextColumn Header="Estado"
+                                                Binding="{Binding Status}"
+                                                Width="*"/>
+                            <DataGridTextColumn Header="Qué hará la app"
+                                                Binding="{Binding Action}"
+                                                Width="1.4*"/>
                         </DataGrid.Columns>
                     </DataGrid>
+
+                    <Border Grid.Row="3"
+                            Padding="10"
+                            Margin="0,8,0,0"
+                            CornerRadius="8"
+                            Background="{DynamicResource SurfaceAltBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1">
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="{DynamicResource MutedForegroundBrush}"
+                                   Text="Las actividades programadas se conservan activas: Windows no ofrece un modo universal equivalente a “solo cuando se necesite” para todas ellas. La app las analiza, pero no las desactiva automáticamente."/>
+                    </Border>
                 </Grid>
             </TabItem>
 
@@ -238,26 +255,25 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="8">
-
                         <Border Padding="14"
+                                Margin="0,0,0,8"
                                 CornerRadius="8"
                                 Background="{DynamicResource SurfaceBrush}"
                                 BorderBrush="{DynamicResource BorderBrush}"
-                                BorderThickness="1"
-                                Margin="0,0,0,8">
+                                BorderThickness="1">
                             <StackPanel>
-                                <TextBlock Text="Virtualización y compatibilidad"
+                                <TextBlock Text="Elige cómo quieres usar la virtualización"
                                            FontSize="18"
                                            FontWeight="SemiBold"/>
-                                <TextBlock Margin="0,4,0,0"
+                                <TextBlock Margin="0,5,0,0"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource MutedForegroundBrush}"
-                                           Text="Cambia entre un modo compatible con las funciones de virtualización de Windows y un modo preparado para VMware. La app detecta el estado real antes de recomendar un reinicio."/>
+                                           Text="La app prepara automáticamente los componentes necesarios. No necesitas administrar servicios ni opciones técnicas por separado."/>
                             </StackPanel>
                         </Border>
 
                         <UniformGrid x:Name="VirtualizationStatusGrid"
-                                     Columns="3"
+                                     Columns="2"
                                      Margin="0,0,0,8">
                             <Border Margin="4"
                                     Padding="12"
@@ -266,7 +282,7 @@
                                     BorderBrush="{DynamicResource BorderBrush}"
                                     BorderThickness="1">
                                 <StackPanel>
-                                    <TextBlock Text="Modo configurado"
+                                    <TextBlock Text="Modo elegido"
                                                Foreground="{DynamicResource MutedForegroundBrush}"/>
                                     <TextBlock x:Name="VirtualizationBootModeText"
                                                Text="Consultando…"
@@ -276,61 +292,6 @@
                                                TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
-
-                            <Border Margin="4"
-                                    Padding="12"
-                                    CornerRadius="8"
-                                    Background="{DynamicResource SurfaceBrush}"
-                                    BorderBrush="{DynamicResource BorderBrush}"
-                                    BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock Text="Hipervisor de Windows"
-                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
-                                    <TextBlock x:Name="VirtualizationCurrentText"
-                                               Text="Consultando…"
-                                               Margin="0,4,0,0"
-                                               FontSize="16"
-                                               FontWeight="SemiBold"
-                                               TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Margin="4"
-                                    Padding="12"
-                                    CornerRadius="8"
-                                    Background="{DynamicResource SurfaceBrush}"
-                                    BorderBrush="{DynamicResource BorderBrush}"
-                                    BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock Text="Seguridad VBS"
-                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
-                                    <TextBlock x:Name="VirtualizationVbsText"
-                                               Text="Consultando…"
-                                               Margin="0,4,0,0"
-                                               FontSize="16"
-                                               FontWeight="SemiBold"
-                                               TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Margin="4"
-                                    Padding="12"
-                                    CornerRadius="8"
-                                    Background="{DynamicResource SurfaceBrush}"
-                                    BorderBrush="{DynamicResource BorderBrush}"
-                                    BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock Text="Integridad de memoria"
-                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
-                                    <TextBlock x:Name="VirtualizationMemoryIntegrityText"
-                                               Text="Consultando…"
-                                               Margin="0,4,0,0"
-                                               FontSize="16"
-                                               FontWeight="SemiBold"
-                                               TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-
                             <Border Margin="4"
                                     Padding="12"
                                     CornerRadius="8"
@@ -348,23 +309,6 @@
                                                TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
-
-                            <Border Margin="4"
-                                    Padding="12"
-                                    CornerRadius="8"
-                                    Background="{DynamicResource SurfaceBrush}"
-                                    BorderBrush="{DynamicResource BorderBrush}"
-                                    BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock Text="Copia de seguridad"
-                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
-                                    <TextBlock x:Name="VirtualizationBackupText"
-                                               Text="Consultando…"
-                                               Margin="0,4,0,0"
-                                               FontSize="16"
-                                               FontWeight="SemiBold"/>
-                                </StackPanel>
-                            </Border>
                         </UniformGrid>
 
                         <Grid Margin="4,0,4,8">
@@ -375,86 +319,55 @@
 
                             <Border Grid.Column="0"
                                     Margin="0,0,4,0"
-                                    Padding="14"
+                                    Padding="16"
                                     CornerRadius="8"
                                     Background="{DynamicResource SurfaceBrush}"
                                     BorderBrush="{DynamicResource BorderBrush}"
                                     BorderThickness="1">
                                 <StackPanel>
-                                    <TextBlock Text="Modo normal"
-                                               FontSize="16"
+                                    <TextBlock Text="Windows y Docker"
+                                               FontSize="18"
                                                FontWeight="SemiBold"/>
-                                    <TextBlock Margin="0,5,0,0"
+                                    <TextBlock Margin="0,6,0,0"
                                                TextWrapping="Wrap"
                                                Foreground="{DynamicResource MutedForegroundBrush}"
-                                               Text="Deja disponible el hipervisor de Windows. Es el modo recomendado para Docker Desktop con WSL2/Hyper-V, Windows Sandbox y funciones de seguridad basadas en virtualización."/>
+                                               Text="Prioriza Docker Desktop, WSL2, Windows Sandbox y las funciones de virtualización y seguridad de Windows."/>
                                     <TextBlock Margin="0,10,0,0"
                                                TextWrapping="Wrap"
-                                               Foreground="{DynamicResource MutedForegroundBrush}"
-                                               Text="Técnico: hypervisorlaunchtype=auto"/>
+                                               Text="Los componentes de VMware quedan disponibles cuando los necesites, pero no se fuerzan a iniciar con Windows."/>
+                                    <Button x:Name="UseNormalVirtualizationButton"
+                                            Margin="0,14,0,0"
+                                            Content="Usar Windows y Docker"
+                                            Click="SetVirtualizationNormal_Click"/>
                                 </StackPanel>
                             </Border>
 
                             <Border Grid.Column="1"
                                     Margin="4,0,0,0"
-                                    Padding="14"
+                                    Padding="16"
                                     CornerRadius="8"
                                     Background="{DynamicResource SurfaceBrush}"
                                     BorderBrush="{DynamicResource BorderBrush}"
                                     BorderThickness="1">
                                 <StackPanel>
-                                    <TextBlock Text="Modo VMware"
-                                               FontSize="16"
+                                    <TextBlock Text="VMware"
+                                               FontSize="18"
                                                FontWeight="SemiBold"/>
-                                    <TextBlock Margin="0,5,0,0"
+                                    <TextBlock Margin="0,6,0,0"
                                                TextWrapping="Wrap"
                                                Foreground="{DynamicResource MutedForegroundBrush}"
-                                               Text="Evita que el hipervisor de Windows arranque en el próximo inicio. Puede mejorar la compatibilidad de VMware y la virtualización anidada cuando Hyper-V o VBS interfieren."/>
-                                    <TextBlock Margin="0,10,0,0"
+                                               Text="Prioriza VMware, las máquinas virtuales y los casos donde necesitas virtualización anidada sin interferencia del modo de virtualización de Windows."/>
+                                    <TextBlock x:Name="VmwareServiceProfileText"
+                                               Margin="0,10,0,0"
                                                TextWrapping="Wrap"
-                                               Foreground="{DynamicResource MutedForegroundBrush}"
-                                               Text="Las políticas de VBS e Integridad de memoria no se eliminan. Si dependen del hipervisor, no estarán en ejecución durante ese arranque."/>
+                                               Text="Comprobando componentes VMware…"/>
+                                    <Button x:Name="UseVmwareVirtualizationButton"
+                                            Margin="0,14,0,0"
+                                            Content="Usar VMware"
+                                            Click="SetVirtualizationVmware_Click"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
-
-                        <Border Padding="14"
-                                Margin="4,0,4,8"
-                                CornerRadius="8"
-                                Background="{DynamicResource SurfaceAltBrush}"
-                                BorderBrush="{DynamicResource BorderBrush}"
-                                BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock Text="Preparación de servicios VMware"
-                                           FontSize="16"
-                                           FontWeight="SemiBold"/>
-                                <TextBlock Margin="0,5,0,0"
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource MutedForegroundBrush}"
-                                           Text="Al preparar VMware, la app pondrá en modo Manual e iniciará Authorization, DHCP y NAT. Los componentes opcionales solo se activan si los necesitas."/>
-
-                                <TextBlock x:Name="VmwareServiceProfileText"
-                                           Margin="0,10,0,0"
-                                           TextWrapping="Wrap"
-                                           Text="Comprobando servicios VMware…"/>
-
-                                <CheckBox x:Name="VmwareUsbToggle"
-                                          Margin="0,12,0,0"
-                                          Content="Usar dispositivos USB dentro de las máquinas virtuales"
-                                          ToolTip="Activa VMware USB Arbitration Service solo cuando prepares VMware."/>
-
-                                <CheckBox x:Name="VmwareAutostartToggle"
-                                          Margin="0,8,0,0"
-                                          Content="Permitir autoinicio de máquinas virtuales configuradas"
-                                          ToolTip="Activa VMware Autostart Service. Déjalo apagado si inicias tus VMs manualmente."/>
-
-                                <WrapPanel Margin="0,10,0,0">
-                                    <Button Content="Pausar servicios VMware"
-                                            Click="StopVmware_Click"
-                                            ToolTip="Detiene y evita el inicio automático de los servicios VMware administrados por la app."/>
-                                </WrapPanel>
-                            </StackPanel>
-                        </Border>
 
                         <Border Padding="10"
                                 Margin="4,0,4,8"
@@ -464,25 +377,14 @@
                                 BorderThickness="1">
                             <TextBlock x:Name="VirtualizationHelpText"
                                        TextWrapping="Wrap"
-                                       Text="Comprobando el estado de virtualización…"/>
+                                       Text="Comprobando el estado actual…"/>
                         </Border>
 
-                        <WrapPanel Margin="0,0,0,4">
-                            <Button x:Name="UseNormalVirtualizationButton"
-                                    Content="Usar modo normal"
-                                    Click="SetVirtualizationNormal_Click"
-                                    ToolTip="Permite que Windows cargue su hipervisor cuando sea necesario."/>
-                            <Button x:Name="UseVmwareVirtualizationButton"
-                                    Content="Preparar para VMware"
-                                    Click="SetVirtualizationVmware_Click"
-                                    ToolTip="Prepara servicios VMware y evita que el hipervisor de Windows se cargue en el próximo arranque."/>
+                        <WrapPanel>
                             <Button Content="Volver al estado original"
                                     Click="RestoreVirtualization_Click"/>
                             <Button Content="Actualizar estado"
                                     Click="RefreshVirtualization_Click"/>
-                        </WrapPanel>
-
-                        <WrapPanel Margin="0,4,0,0">
                             <Button x:Name="RestartForVirtualizationButton"
                                     Content="Reiniciar para aplicar"
                                     Click="RestartForVirtualization_Click"
@@ -491,9 +393,29 @@
                                        VerticalAlignment="Center"
                                        Margin="8,0,0,0"
                                        Foreground="{DynamicResource MutedForegroundBrush}"
-                                       Text="No hay cambios pendientes que requieran reinicio."/>
+                                       Text="No hay cambios pendientes."/>
                         </WrapPanel>
 
+                        <Expander Header="Información técnica"
+                                  Margin="4,10,4,0">
+                            <StackPanel Margin="8">
+                                <TextBlock x:Name="VirtualizationCurrentText"
+                                           Text="Consultando hipervisor…"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock x:Name="VirtualizationVbsText"
+                                           Margin="0,4,0,0"
+                                           Text="Consultando seguridad basada en virtualización…"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock x:Name="VirtualizationMemoryIntegrityText"
+                                           Margin="0,4,0,0"
+                                           Text="Consultando integridad de memoria…"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock x:Name="VirtualizationBackupText"
+                                           Margin="0,4,0,0"
+                                           Text="Consultando copia de seguridad…"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Expander>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -617,53 +539,36 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="WinUtil">
+            <TabItem Header="Ajustes">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <Border Grid.Row="0"
-                            Padding="12"
+                            Padding="14"
                             Margin="0,0,0,8"
                             CornerRadius="8"
                             Background="{DynamicResource SurfaceBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1">
                         <StackPanel>
-                            <TextBlock Text="Ajustes de WinUtil"
+                            <TextBlock Text="Ajustes sencillos"
                                        FontSize="18"
                                        FontWeight="SemiBold"/>
-                            <TextBlock Margin="0,4,0,0"
+                            <TextBlock Margin="0,5,0,0"
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource MutedForegroundBrush}"
-                                       Text="Mostramos primero ajustes sencillos que Windows11Optimizer puede aplicar y deshacer de forma nativa. Las opciones avanzadas siguen disponibles para consulta, pero no ejecutamos scripts remotos."/>
+                                       Text="Solo se muestran opciones que Windows11Optimizer puede aplicar y deshacer directamente. Las opciones complejas del catálogo de WinUtil ya no aparecen en la interfaz."/>
+                            <TextBlock x:Name="WinUtilStatusText"
+                                       Margin="0,8,0,0"
+                                       Foreground="{DynamicResource MutedForegroundBrush}"
+                                       Text="Cargando ajustes…"/>
                         </StackPanel>
                     </Border>
 
-                    <DockPanel Grid.Row="1" Margin="0,0,0,8">
-                        <WrapPanel DockPanel.Dock="Left">
-                            <Button Content="Actualizar"
-                                    Click="RefreshWinUtil_Click"/>
-                            <Button Content="Proyecto original"
-                                    Click="OpenWinUtilRepo_Click"/>
-                            <CheckBox x:Name="WinUtilShowAllToggle"
-                                      Content="Mostrar opciones avanzadas y de consulta"
-                                      VerticalAlignment="Center"
-                                      Margin="10,0,0,0"
-                                      Checked="WinUtilShowAllToggle_Changed"
-                                      Unchecked="WinUtilShowAllToggle_Changed"/>
-                        </WrapPanel>
-                        <TextBlock x:Name="WinUtilStatusText"
-                                   DockPanel.Dock="Right"
-                                   VerticalAlignment="Center"
-                                   Foreground="{DynamicResource MutedForegroundBrush}"
-                                   Text="Cargando opciones…"/>
-                    </DockPanel>
-
-                    <Grid Grid.Row="2">
+                    <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="2*"/>
                             <ColumnDefinition Width="3*"/>
@@ -679,12 +584,9 @@
                                   SelectionChanged="WinUtilGrid_SelectionChanged"
                                   AlternationCount="2">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Opción"
+                                <DataGridTextColumn Header="Ajuste"
                                                     Binding="{Binding Content}"
                                                     Width="*"/>
-                                <DataGridTextColumn Header="Categoría"
-                                                    Binding="{Binding Category}"
-                                                    Width="145"/>
                             </DataGrid.Columns>
                         </DataGrid>
 
@@ -694,67 +596,45 @@
                                 Background="{DynamicResource SurfaceBrush}"
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <StackPanel>
-                                    <TextBlock x:Name="WinUtilSelectedTitleText"
-                                               Text="Selecciona una opción"
-                                               FontSize="20"
-                                               FontWeight="SemiBold"
-                                               TextWrapping="Wrap"/>
+                            <StackPanel>
+                                <TextBlock x:Name="WinUtilSelectedTitleText"
+                                           Text="Selecciona un ajuste"
+                                           FontSize="20"
+                                           FontWeight="SemiBold"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock x:Name="WinUtilSelectedStateText"
+                                           Margin="0,5,0,0"
+                                           Foreground="{DynamicResource AccentBrush}"
+                                           FontWeight="SemiBold"
+                                           Text="Sin seleccionar"/>
 
-                                    <TextBlock x:Name="WinUtilSelectedStateText"
-                                               Margin="0,5,0,0"
-                                               Foreground="{DynamicResource AccentBrush}"
-                                               FontWeight="SemiBold"
-                                               Text="Sin seleccionar"/>
+                                <TextBlock Text="Qué hace"
+                                           Margin="0,18,0,4"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock x:Name="WinUtilSelectedDescriptionText"
+                                           Text="Selecciona un ajuste para ver una explicación sencilla."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"/>
 
-                                    <TextBlock Text="Qué hace"
-                                               Margin="0,18,0,4"
-                                               FontWeight="SemiBold"/>
-                                    <TextBlock x:Name="WinUtilSelectedDescriptionText"
-                                               Text="Selecciona una opción de la lista para ver una explicación sencilla."
-                                               TextWrapping="Wrap"
-                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
+                                <TextBlock Text="Qué cambia"
+                                           Margin="0,18,0,4"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock x:Name="WinUtilSelectedImpactText"
+                                           Text="No se realizará ningún cambio hasta que pulses Aplicar."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"/>
 
-                                    <TextBlock Text="Qué cambia en tu PC"
-                                               Margin="0,18,0,4"
-                                               FontWeight="SemiBold"/>
-                                    <TextBlock x:Name="WinUtilSelectedImpactText"
-                                               Text="No se realizará ningún cambio hasta que pulses Aplicar."
-                                               TextWrapping="Wrap"
-                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
-
-                                    <TextBlock x:Name="WinUtilSelectedCategoryText"
-                                               Margin="0,12,0,0"
-                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
-
-                                    <WrapPanel Margin="0,16,0,0">
-                                        <Button x:Name="WinUtilApplyButton"
-                                                Content="Aplicar"
-                                                Click="ApplySelectedWinUtil_Click"
-                                                IsEnabled="False"/>
-                                        <Button x:Name="WinUtilRestoreButton"
-                                                Content="Deshacer"
-                                                Click="RestoreSelectedWinUtil_Click"
-                                                IsEnabled="False"/>
-                                    </WrapPanel>
-
-                                    <TextBlock Margin="0,8,0,0"
-                                               TextWrapping="Wrap"
-                                               Foreground="{DynamicResource MutedForegroundBrush}"
-                                               Text="Los ajustes aplicables guardan el valor anterior antes de modificar Windows."/>
-
-                                    <Expander Header="Detalles técnicos"
-                                              Margin="0,18,0,0">
-                                        <TextBlock x:Name="WinUtilTechnicalText"
-                                                   Margin="8"
-                                                   FontFamily="Cascadia Mono, Consolas"
-                                                   TextWrapping="Wrap"
-                                                   Foreground="{DynamicResource MutedForegroundBrush}"
-                                                   Text="ID, acciones y perfil aparecerán aquí."/>
-                                    </Expander>
-                                </StackPanel>
-                            </ScrollViewer>
+                                <WrapPanel Margin="0,16,0,0">
+                                    <Button x:Name="WinUtilApplyButton"
+                                            Content="Aplicar"
+                                            Click="ApplySelectedWinUtil_Click"
+                                            IsEnabled="False"/>
+                                    <Button x:Name="WinUtilRestoreButton"
+                                            Content="Deshacer"
+                                            Click="RestoreSelectedWinUtil_Click"
+                                            IsEnabled="False"/>
+                                </WrapPanel>
+                            </StackPanel>
                         </Border>
                     </Grid>
                 </Grid>
