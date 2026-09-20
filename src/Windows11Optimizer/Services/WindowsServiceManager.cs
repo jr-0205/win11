@@ -70,19 +70,27 @@ public sealed class WindowsServiceManager
 
     public async Task StopAndDisableAsync(string name)
     {
-        try
+        using var controller = new ServiceController(name);
+        controller.Refresh();
+
+        if (controller.Status is not ServiceControllerStatus.Stopped and
+            not ServiceControllerStatus.StopPending &&
+            controller.CanStop)
         {
-            using var controller = new ServiceController(name);
-            controller.Refresh();
-            if (controller.Status is not ServiceControllerStatus.Stopped and not ServiceControllerStatus.StopPending)
+            controller.Stop();
+
+            try
             {
-                controller.Stop();
-                await Task.Run(() => controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(12)));
+                await Task.Run(() =>
+                    controller.WaitForStatus(
+                        ServiceControllerStatus.Stopped,
+                        TimeSpan.FromSeconds(12)));
             }
-        }
-        catch (InvalidOperationException)
-        {
-            return;
+            catch (System.ServiceProcess.TimeoutException)
+            {
+                // Aunque el servicio tarde en detenerse, impedir el próximo
+                // arranque sigue siendo útil y reversible.
+            }
         }
 
         await SetStartupDisabledAsync(name);
