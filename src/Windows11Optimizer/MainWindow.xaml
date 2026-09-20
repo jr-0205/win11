@@ -1,0 +1,130 @@
+<Window x:Class="Windows11Optimizer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Windows 11 Optimizer" Height="720" Width="1060"
+        MinHeight="620" MinWidth="920"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Padding="12" CornerRadius="8" Background="#11000000" Margin="0,0,0,8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left">
+                    <TextBlock Text="Windows 11 Optimizer" FontSize="24" FontWeight="SemiBold"/>
+                    <TextBlock Text="Optimización reversible · Perfil seguro · Servicios bajo demanda" Opacity="0.75"/>
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                    <TextBlock x:Name="AdminText" Text="Administrador: verificando…" HorizontalAlignment="Right"/>
+                    <TextBlock x:Name="BackupText" Text="Backup: verificando…" HorizontalAlignment="Right" Opacity="0.75"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <TabControl Grid.Row="1">
+            <TabItem Header="Panel">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <UniformGrid Columns="4" Margin="8">
+                            <Border BorderBrush="#33000000" BorderThickness="1" CornerRadius="8" Padding="12" Margin="4">
+                                <StackPanel><TextBlock Text="CPU" Opacity="0.7"/><TextBlock x:Name="CpuText" Text="-- %" FontSize="25" FontWeight="SemiBold"/></StackPanel>
+                            </Border>
+                            <Border BorderBrush="#33000000" BorderThickness="1" CornerRadius="8" Padding="12" Margin="4">
+                                <StackPanel><TextBlock Text="RAM" Opacity="0.7"/><TextBlock x:Name="RamText" Text="-- %" FontSize="25" FontWeight="SemiBold"/></StackPanel>
+                            </Border>
+                            <Border BorderBrush="#33000000" BorderThickness="1" CornerRadius="8" Padding="12" Margin="4">
+                                <StackPanel><TextBlock Text="RAM usada" Opacity="0.7"/><TextBlock x:Name="RamGbText" Text="-- GB" FontSize="25" FontWeight="SemiBold"/></StackPanel>
+                            </Border>
+                            <Border BorderBrush="#33000000" BorderThickness="1" CornerRadius="8" Padding="12" Margin="4">
+                                <StackPanel><TextBlock Text="Procesos" Opacity="0.7"/><TextBlock x:Name="ProcessText" Text="--" FontSize="25" FontWeight="SemiBold"/></StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <GroupBox Header="Perfil seguro">
+                            <StackPanel>
+                                <TextBlock TextWrapping="Wrap" Margin="4">
+                                    Detiene y evita el arranque automático de servicios seleccionados de VMware y utilidades Acer no esenciales. No modifica Defender, Windows Update, búsqueda, audio, Wi‑Fi, Bluetooth, touchpad, AMD Graphics ni Quick Access.
+                                </TextBlock>
+                                <WrapPanel Margin="0,8,0,0">
+                                    <Button Content="Aplicar optimización segura" Click="OptimizeSafe_Click"/>
+                                    <Button Content="Restaurar configuración" Click="Restore_Click"/>
+                                    <Button Content="Exportar diagnóstico" Click="ExportDiagnostic_Click"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Accesos rápidos">
+                            <WrapPanel>
+                                <Button Content="Configuración de inicio de Windows" Click="OpenStartupSettings_Click"/>
+                                <Button Content="Administrador de tareas" Click="OpenTaskManager_Click"/>
+                                <Button Content="Servicios" Click="OpenServices_Click"/>
+                            </WrapPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Servicios bajo demanda">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <WrapPanel Grid.Row="0" Margin="0,0,0,8">
+                        <Button Content="Iniciar VMware" Click="StartVmware_Click"/>
+                        <Button Content="Detener VMware" Click="StopVmware_Click"/>
+                        <Button Content="Iniciar utilidades Acer" Click="StartAcer_Click"/>
+                        <Button Content="Detener utilidades Acer" Click="StopAcer_Click"/>
+                        <Button Content="Actualizar" Click="RefreshServices_Click"/>
+                    </WrapPanel>
+                    <DataGrid Grid.Row="1" x:Name="ServicesGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Grupo" Binding="{Binding Group}" Width="110"/>
+                            <DataGridTextColumn Header="Servicio" Binding="{Binding DisplayName}" Width="*"/>
+                            <DataGridTextColumn Header="Nombre interno" Binding="{Binding Name}" Width="220"/>
+                            <DataGridTextColumn Header="Estado" Binding="{Binding State}" Width="110"/>
+                            <DataGridTextColumn Header="Inicio" Binding="{Binding StartMode}" Width="110"/>
+                            <DataGridTextColumn Header="Política" Binding="{Binding Policy}" Width="200"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Inicio">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                        <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" TextWrapping="Wrap" Text="La v0.1 inventaría las entradas de inicio y abre la pantalla oficial de Windows para habilitarlas o deshabilitarlas de forma segura."/>
+                        <Button DockPanel.Dock="Right" Content="Abrir Apps de inicio" Click="OpenStartupSettings_Click"/>
+                    </DockPanel>
+                    <DataGrid Grid.Row="1" x:Name="StartupGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Nombre" Binding="{Binding Name}" Width="220"/>
+                            <DataGridTextColumn Header="Origen" Binding="{Binding Source}" Width="180"/>
+                            <DataGridTextColumn Header="Comando" Binding="{Binding Command}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Registro">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBox Grid.Row="0" x:Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas"/>
+                    <Button Grid.Row="1" Content="Limpiar registro" HorizontalAlignment="Right" Click="ClearLog_Click"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <TextBlock Grid.Row="2" Margin="4,8,4,0" Opacity="0.65" Text="v0.1 · Los cambios del perfil seguro requieren permisos de administrador y crean una copia de seguridad antes de modificar servicios."/>
+    </Grid>
+</Window>
