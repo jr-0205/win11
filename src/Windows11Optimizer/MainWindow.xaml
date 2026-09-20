@@ -334,7 +334,7 @@
                                                Text="Prioriza Docker Desktop, WSL2, Windows Sandbox y las funciones de virtualización y seguridad de Windows."/>
                                     <TextBlock Margin="0,10,0,0"
                                                TextWrapping="Wrap"
-                                               Text="Los componentes de VMware quedan disponibles cuando los necesites, pero no se fuerzan a iniciar con Windows."/>
+                                               Text="Los componentes de VMware quedan disponibles cuando los necesites. Además, la app repara automáticamente WSL y los componentes de virtualización de Windows si alguno quedó deshabilitado."/>
                                     <Button x:Name="UseNormalVirtualizationButton"
                                             Margin="0,14,0,0"
                                             Content="Usar Windows y Docker"
