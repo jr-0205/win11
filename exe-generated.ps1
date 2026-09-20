@@ -55,15 +55,29 @@ New-Item $InstallerDir -ItemType Directory -Force | Out-Null
 
 $dotnet = Get-Command "dotnet.exe" -ErrorAction SilentlyContinue
 if (-not $dotnet) {
-    throw "No se encontró .NET SDK. Instala .NET 8 SDK y vuelve a ejecutar este archivo."
+    throw "No se encontró .NET SDK. Instala .NET 8 o superior y vuelve a ejecutar este archivo."
 }
 
 Write-Step "Comprobando .NET SDK"
-$sdkList = (& dotnet --list-sdks) -join [Environment]::NewLine
-if ($sdkList -notmatch "(?m)^8\.") {
-    throw "Se requiere .NET 8 SDK. SDK detectados: $sdkList"
+$sdkLines = & dotnet --list-sdks
+if ($LASTEXITCODE -ne 0 -or -not $sdkLines) {
+    throw "No fue posible consultar los SDK de .NET instalados."
 }
-Write-Host $sdkList
+
+$detectedMajors = foreach ($line in $sdkLines) {
+    if ($line -match "^(\d+)\.") {
+        [int]$Matches[1]
+    }
+}
+
+$highestMajor = ($detectedMajors | Measure-Object -Maximum).Maximum
+if (-not $highestMajor -or $highestMajor -lt 8) {
+    throw "Se requiere .NET SDK 8 o superior. SDK detectados: $($sdkLines -join '; ')"
+}
+
+Write-Host ($sdkLines -join [Environment]::NewLine)
+Write-Host "SDK compatible detectado: .NET $highestMajor.x" -ForegroundColor Green
+Write-Host "El proyecto seguirá compilándose para net8.0-windows." -ForegroundColor DarkGray
 
 Write-Step "Restaurando paquetes"
 & dotnet restore $Solution
