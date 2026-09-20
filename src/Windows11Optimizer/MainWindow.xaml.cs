@@ -360,27 +360,66 @@ public partial class MainWindow : Window
         {
             var state = await _virtualization.GetStateAsync();
 
-            VirtualizationBootModeText.Text =
-                state.HypervisorLaunchType.Equals("Off", StringComparison.OrdinalIgnoreCase)
-                    ? "Modo VMware"
-                    : "Modo normal";
-
-            VirtualizationCurrentText.Text =
-                state.HypervisorPresentNow
-                    ? "Activo en esta sesión"
-                    : "No detectado en esta sesión";
+            VirtualizationBootModeText.Text = state.ConfiguredModeLabel;
+            VirtualizationCurrentText.Text = state.CurrentHypervisorLabel;
+            VirtualizationRestartText.Text = state.RestartLabel;
 
             VirtualizationBackupText.Text =
                 _virtualization.BackupExists
                     ? "Disponible"
-                    : "Aún no creado";
+                    : "Aún no creada";
+
+            RestartForVirtualizationButton.IsEnabled = state.PendingRestart;
+
+            if (state.PendingRestart)
+            {
+                VirtualizationHelpText.Text =
+                    "Hay un cambio de virtualización preparado que todavía no está aplicado en esta sesión. " +
+                    "Reinicia únicamente si quieres usar ese nuevo modo ahora.";
+
+                VirtualizationRestartHintText.Text =
+                    "Hay un cambio pendiente. Reinicia cuando te convenga para aplicarlo.";
+            }
+            else if (state.IsConfiguredForVmware && !state.HypervisorPresentNow)
+            {
+                VirtualizationHelpText.Text =
+                    "El equipo ya está preparado para VMware y el hipervisor de Windows no está activo. " +
+                    "No necesitas reiniciar.";
+
+                VirtualizationRestartHintText.Text =
+                    "Modo VMware ya activo para esta sesión. No necesitas reiniciar.";
+            }
+            else if (state.IsConfiguredForNormal && state.HypervisorPresentNow)
+            {
+                VirtualizationHelpText.Text =
+                    "El equipo ya está en modo normal y el hipervisor de Windows está activo. " +
+                    "No necesitas reiniciar.";
+
+                VirtualizationRestartHintText.Text =
+                    "Modo normal ya activo. No necesitas reiniciar.";
+            }
+            else
+            {
+                VirtualizationHelpText.Text =
+                    "El modo normal está configurado. El hipervisor de Windows no está activo en esta sesión; " +
+                    "esto puede ser normal si ninguna función de Windows lo está usando. No se recomienda reiniciar solo por este estado.";
+
+                VirtualizationRestartHintText.Text =
+                    "No hay un cambio pendiente creado por la app.";
+            }
         }
         catch (Exception ex)
         {
             VirtualizationBootModeText.Text = "No disponible";
             VirtualizationCurrentText.Text = "No disponible";
+            VirtualizationRestartText.Text = "No disponible";
             VirtualizationBackupText.Text =
-                _virtualization.BackupExists ? "Disponible" : "Aún no creado";
+                _virtualization.BackupExists ? "Disponible" : "Aún no creada";
+            VirtualizationHelpText.Text =
+                "No se pudo comprobar el estado de virtualización.";
+            VirtualizationRestartHintText.Text =
+                "No reinicies desde la app hasta poder comprobar el estado.";
+            RestartForVirtualizationButton.IsEnabled = false;
 
             Log($"Error leyendo virtualización: {ex.Message}");
         }
@@ -388,10 +427,39 @@ public partial class MainWindow : Window
 
     private async void SetVirtualizationNormal_Click(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            var state = await _virtualization.GetStateAsync();
+
+            if (state.IsConfiguredForNormal)
+            {
+                await RefreshVirtualizationAsync();
+
+                if (state.PendingRestart)
+                {
+                    ShowToast(
+                        "El modo normal ya está preparado. Solo falta reiniciar para aplicarlo.",
+                        ActivityKind.Warning);
+                }
+                else
+                {
+                    ShowToast(
+                        "El equipo ya está configurado en modo normal. No necesitas reiniciar.",
+                        ActivityKind.Success);
+                }
+
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"No se pudo comprobar el modo actual: {ex.Message}");
+        }
+
         var answer = MessageBox.Show(
-            "Se configurará hypervisorlaunchtype=auto para el próximo arranque.\n\n" +
-            "El cambio no se aplicará hasta reiniciar Windows. ¿Continuar?",
-            "Modo Normal",
+            "Se preparará Windows para usar su modo normal de virtualización.\n\n" +
+            "La app comprobará después si realmente necesitas reiniciar. ¿Continuar?",
+            "Usar modo normal",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
 
@@ -402,18 +470,46 @@ public partial class MainWindow : Window
         }
 
         await RunVirtualizationOperationAsync(
-            "Configurando modo Normal",
-            "Guardando el valor original y estableciendo hypervisorlaunchtype=auto…",
+            "Preparando modo normal",
+            "Guardando el estado original y actualizando la configuración de arranque…",
             () => _virtualization.SetNormalAsync());
     }
 
     private async void SetVirtualizationVmware_Click(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            var state = await _virtualization.GetStateAsync();
+
+            if (state.IsConfiguredForVmware)
+            {
+                await RefreshVirtualizationAsync();
+
+                if (state.PendingRestart)
+                {
+                    ShowToast(
+                        "El modo VMware ya está preparado. Reinicia solo si quieres aplicarlo ahora.",
+                        ActivityKind.Warning);
+                }
+                else
+                {
+                    ShowToast(
+                        "El equipo ya está preparado para VMware. No necesitas reiniciar.",
+                        ActivityKind.Success);
+                }
+
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"No se pudo comprobar el modo actual: {ex.Message}");
+        }
+
         var answer = MessageBox.Show(
-            "Se configurará hypervisorlaunchtype=off para el próximo arranque.\n\n" +
-            "Mientras esté en OFF, Hyper-V y otras funciones que dependan del hipervisor " +
-            "de Windows pueden no estar disponibles.\n\n¿Continuar?",
-            "Modo VMware directo",
+            "Se preparará Windows para usar VMware sin cargar el hipervisor de Windows.\n\n" +
+            "La app comprobará después si realmente necesitas reiniciar. ¿Continuar?",
+            "Preparar para VMware",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
@@ -424,8 +520,8 @@ public partial class MainWindow : Window
         }
 
         await RunVirtualizationOperationAsync(
-            "Configurando modo VMware directo",
-            "Guardando el valor original y estableciendo hypervisorlaunchtype=off…",
+            "Preparando modo VMware",
+            "Guardando el estado original y actualizando la configuración de arranque…",
             () => _virtualization.SetVmwareDirectAsync());
     }
 
@@ -434,14 +530,15 @@ public partial class MainWindow : Window
         if (!_virtualization.BackupExists)
         {
             ShowToast(
-                "No existe todavía un backup de la configuración de virtualización.",
+                "No existe todavía una copia de seguridad de la configuración de virtualización.",
                 ActivityKind.Warning);
             return;
         }
 
         var answer = MessageBox.Show(
-            "Se restaurará el valor de hypervisorlaunchtype que existía antes del primer cambio realizado por la app.\n\n¿Continuar?",
-            "Restaurar virtualización",
+            "Se restaurará el modo de virtualización que existía antes del primer cambio realizado por la app.\n\n" +
+            "Después se comprobará automáticamente si hace falta reiniciar. ¿Continuar?",
+            "Volver al estado original",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
 
@@ -458,7 +555,7 @@ public partial class MainWindow : Window
     {
         BeginActivity(
             "Actualizando virtualización",
-            "Consultando BCD y el estado actual del hipervisor…");
+            "Comprobando el modo configurado y el estado de esta sesión…");
 
         try
         {
@@ -466,7 +563,7 @@ public partial class MainWindow : Window
 
             EndActivity(
                 "Virtualización actualizada",
-                "Se volvió a consultar la configuración de arranque.",
+                "El estado mostrado corresponde a la configuración actual del equipo.",
                 ActivityKind.Success);
 
             ShowToast(
@@ -488,16 +585,40 @@ public partial class MainWindow : Window
 
     private async void RestartForVirtualization_Click(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            var state = await _virtualization.GetStateAsync();
+
+            if (!state.PendingRestart)
+            {
+                RestartForVirtualizationButton.IsEnabled = false;
+                ShowToast(
+                    "No hay ningún cambio pendiente que necesite reinicio.",
+                    ActivityKind.Success);
+                await RefreshVirtualizationAsync();
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"No se pudo validar el reinicio pendiente: {ex.Message}");
+            ShowToast(
+                "No se pudo comprobar si el reinicio es necesario.",
+                ActivityKind.Warning);
+            return;
+        }
+
         var answer = MessageBox.Show(
-            "Windows se reiniciará inmediatamente. Guarda cualquier trabajo abierto antes de continuar.\n\n¿Reiniciar ahora?",
-            "Reiniciar Windows",
+            "Hay un cambio de virtualización pendiente. Windows se reiniciará inmediatamente para aplicarlo.\n\n" +
+            "Guarda cualquier trabajo abierto antes de continuar. ¿Reiniciar ahora?",
+            "Reiniciar para aplicar",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
         if (answer != MessageBoxResult.Yes)
             return;
 
-        Log("Reinicio solicitado para aplicar la configuración de virtualización.");
+        Log("Reinicio solicitado para aplicar un cambio pendiente de virtualización.");
         ShowToast("Reiniciando Windows…", ActivityKind.Warning);
 
         try
@@ -514,26 +635,42 @@ public partial class MainWindow : Window
     private async Task RunVirtualizationOperationAsync(
         string title,
         string detail,
-        Func<Task> operation)
+        Func<Task<bool>> operation)
     {
         BeginActivity(title, detail);
 
         try
         {
             Log(title + "…");
-            await operation();
+            var requiresRestart = await operation();
             await RefreshVirtualizationAsync();
 
-            EndActivity(
-                title + ": preparado",
-                "El cambio se aplicará después de reiniciar Windows.",
-                ActivityKind.Success);
+            if (requiresRestart)
+            {
+                EndActivity(
+                    title + ": cambio preparado",
+                    "El nuevo modo necesita un reinicio para aplicarse en esta sesión.",
+                    ActivityKind.Warning);
 
-            ShowToast(
-                "Configuración actualizada. Reinicia Windows para aplicarla.",
-                ActivityKind.Success);
+                ShowToast(
+                    "Cambio preparado. Reinicia cuando quieras aplicarlo.",
+                    ActivityKind.Warning);
 
-            Log(title + ": configuración guardada. Reinicio pendiente.");
+                Log(title + ": configuración guardada. Reinicio necesario para aplicar el cambio.");
+            }
+            else
+            {
+                EndActivity(
+                    title + ": listo",
+                    "El estado actual ya es compatible. No necesitas reiniciar.",
+                    ActivityKind.Success);
+
+                ShowToast(
+                    "Listo. No necesitas reiniciar el equipo.",
+                    ActivityKind.Success);
+
+                Log(title + ": configuración guardada sin reinicio necesario.");
+            }
         }
         catch (Exception ex)
         {
