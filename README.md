@@ -343,3 +343,74 @@ La preparación de servicios es una capa secundaria:
 - **Windows y Docker** repara WSL/Host Compute/Host Network únicamente si alguno quedó deshabilitado.
 - **VMware** prepara sus componentes después de guardar el modo `off`.
 - un fallo de esa preparación secundaria no revierte ni oculta el cambio BCD.
+
+
+## Examen con IA y Focus Boost v0.8
+
+La v0.8 añade módulos nuevos sin modificar el contrato protegido Docker ↔ VMware.
+
+### Examen con IA
+
+La aplicación recopila un resumen limitado del equipo:
+
+- uso de RAM;
+- número de procesos;
+- programas de inicio y referencias huérfanas;
+- número de aplicaciones registradas;
+- procesos con mayor uso de memoria;
+- estado de acciones del catálogo seguro.
+
+La IA **solo recomienda**. La respuesta debe seleccionar IDs existentes en `SafeActionCatalog`. Cualquier ID desconocido se descarta antes de llegar a la interfaz.
+
+La ejecución siempre corresponde a `SafeActionEngine`, que implementa acciones locales validadas y reversibles.
+
+Para habilitar la API:
+
+```powershell
+setx OPENAI_API_KEY "tu_clave"
+```
+
+Después vuelve a abrir Windows11Optimizer. Opcionalmente puede definirse `OPENAI_MODEL`; por defecto se usa `gpt-5.6-luna`.
+
+La clave no se incluye en el repositorio ni se guarda en los archivos de configuración de la aplicación.
+
+### Aplicaciones
+
+La pestaña **Aplicaciones**:
+
+- enumera software registrado por Windows;
+- abre la ubicación registrada cuando existe;
+- inicia únicamente el desinstalador publicado por Windows;
+- puede pedir una explicación con IA usando nombre, versión y editor;
+- muestra residuos confirmados del inicio;
+- elimina residuos solo mediante el motor seguro y reversible de entradas huérfanas.
+
+Windows11Optimizer no borra carpetas de aplicaciones de forma heurística.
+
+### Focus Boost
+
+Focus Boost:
+
+- funciona con procesos activos seleccionados por el usuario;
+- nunca usa prioridad `High` ni `Realtime`;
+- bloquea una lista interna de procesos críticos;
+- usa como máximo `AboveNormal` para el objetivo;
+- reduce temporalmente a `BelowNormal` sincronizadores conocidos y aprobados;
+- guarda el estado original;
+- restaura automáticamente cuando termina el proceso objetivo;
+- recupera sesiones abandonadas al volver a iniciar el agente.
+
+### Agente ligero
+
+`Windows11Optimizer.Agent.exe` es un ejecutable separado con nivel `asInvoker`.
+
+No carga la UI WPF administrativa al iniciar Windows.
+
+Hotkeys por defecto:
+
+- `Ctrl+Alt+Space`: Mini Focus Boost.
+- `Ctrl+Alt+O`: interfaz completa.
+
+Las combinaciones se pueden cambiar desde **Hotkeys** o desde el icono de bandeja. El agente intenta registrar las combinaciones antes de guardarlas y avisa si otra aplicación ya las ocupa.
+
+El agente se registra bajo HKCU para iniciar con Windows y puede desactivarse desde su propia configuración.
