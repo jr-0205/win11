@@ -19,10 +19,15 @@ public partial class MainWindow : Window
     private readonly BackupService _backup = new();
     private readonly StartupInventoryService _startup = new();
     private readonly WinUtilCatalogService _winUtil = new();
+    private readonly WinUtilNativeService _winUtilNative = new();
+    private readonly AutorunsService _autoruns = new();
     private readonly VirtualizationModeService _virtualization = new();
     private readonly ThemeService _theme = new();
     private readonly OptimizationService _optimizer;
     private readonly DiagnosticReportService _diagnostics;
+    private readonly SmartAnalysisService _smartAnalysis;
+    private IReadOnlyList<WinUtilTweak> _winUtilAllTweaks = Array.Empty<WinUtilTweak>();
+    private AutorunsAnalysisResult? _lastAutorunsAnalysis;
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _toastTimer;
     private bool _refreshingMetrics;
@@ -35,6 +40,7 @@ public partial class MainWindow : Window
 
         _optimizer = new OptimizationService(_serviceManager, _taskManager, _backup);
         _diagnostics = new DiagnosticReportService(_metrics, _serviceManager, _startup);
+        _smartAnalysis = new SmartAnalysisService(_metrics, _startup, _autoruns);
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _timer.Tick += async (_, _) => await RefreshMetricsAsync();
@@ -69,11 +75,13 @@ public partial class MainWindow : Window
         await RefreshServicesAsync();
         await RefreshVirtualizationAsync();
         await RefreshMetricsAsync();
+        UpdateAutorunsAvailability();
 
         _timer.Start();
+        _ = LoadWinUtilCatalogAsync(forceRefresh: false, showFeedback: false);
 
         Log("Aplicación iniciada. Perfil seguro cargado.");
-        Log($"WinUtil disponible como catálogo de solo lectura: {WinUtilCatalogService.Version} / {WinUtilCatalogService.Commit[..12]}.");
+        Log($"WinUtil: catálogo fijado {WinUtilCatalogService.Version} / {WinUtilCatalogService.Commit[..12]} con acciones nativas limitadas y reversibles.");
 
         EndActivity(
             "Listo",
@@ -100,6 +108,159 @@ public partial class MainWindow : Window
         MetricsGrid.Columns = compact ? 2 : 4;
         VirtualizationStatusGrid.Columns = compact ? 2 : 4;
         ActivityProgress.Width = compact ? 120 : 180;
+    }
+
+    private void UpdateAutorunsAvailability()
+    {
+        var tool = _autoruns.FindTool();
+
+        if (tool is null)
+        {
+            AutorunsStatusText.Text =
+                "Autoruns no está instalado. El análisis propio de la app sigue funcionando; puedes añadir Autoruns para revisar más ubicaciones de inicio.";
+            return;
+        }
+
+        AutorunsStatusText.Text =
+            $"Autoruns detectado: {Path.GetFileName(tool)}. Listo para análisis avanzado.";
+    }
+
+    private async void AnalyzeComputer_Click(object sender, RoutedEventArgs e)
+    {
+        BeginActivity(
+            "Analizando el equipo",
+            "Midiendo recursos, inicio de Windows y componentes bajo demanda…");
+
+        try
+        {
+            var snapshot = await _smartAnalysis.CaptureAsync(includeAutoruns: false);
+            var autoruns = await _autoruns.AnalyzeAsync();
+            _lastAutorunsAnalysis = autoruns;
+
+            AutorunsFindingsGrid.ItemsSource = autoruns.Entries;
+
+            var manageableRunning = CountRunningManageableServices();
+            var autorunsText = autoruns.Available
+                ? $"Autoruns: {autoruns.ThirdPartyCount} entradas de terceros, {autoruns.MissingCount} con archivo no encontrado."
+                : "Autoruns: no instalado (análisis avanzado opcional).";
+
+            SmartAnalysisText.Text =
+                $"RAM: {snapshot.UsedRamGb:N2} de {snapshot.TotalRamGb:N2} GB ({snapshot.RamPercent:N1} %). " +
+                $"Procesos: {snapshot.ProcessCount}. Inicio básico: {snapshot.StartupEntryCount} entradas, " +
+                $"{snapshot.OrphanedStartupCount} huérfanas. Servicios bajo demanda activos: {manageableRunning}. " +
+                autorunsText;
+
+            UpdateAutorunsResult(autoruns);
+
+            EndActivity(
+                "Análisis completado",
+                "La app no realizó cambios; solo midió el estado actual.",
+                ActivityKind.Success);
+
+            ShowToast(
+                "Análisis completado. Revisa las oportunidades detectadas.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error en análisis inteligente: {ex.Message}");
+            EndActivity("Error analizando el equipo", ex.Message, ActivityKind.Error);
+            ShowToast("No se pudo completar el análisis.", ActivityKind.Error);
+        }
+    }
+
+    private async void AnalyzeAutoruns_Click(object sender, RoutedEventArgs e)
+    {
+        await AnalyzeAutorunsInternalAsync(showToast: true);
+    }
+
+    private async Task AnalyzeAutorunsInternalAsync(bool showToast)
+    {
+        BeginActivity(
+            "Analizando inicio con Autoruns",
+            "Revisando entradas de terceros, tareas, servicios y otras ubicaciones de autoarranque…");
+
+        var result = await _autoruns.AnalyzeAsync();
+        _lastAutorunsAnalysis = result;
+        AutorunsFindingsGrid.ItemsSource = result.Entries;
+        UpdateAutorunsResult(result);
+
+        if (!result.Available)
+        {
+            EndActivity(
+                "Autoruns no disponible",
+                "Puedes instalarlo desde la página oficial de Microsoft Sysinternals.",
+                ActivityKind.Warning);
+
+            if (showToast)
+                ShowToast("Autoruns no está instalado.", ActivityKind.Warning);
+
+            return;
+        }
+
+        EndActivity(
+            "Análisis de Autoruns completado",
+            $"{result.ThirdPartyCount} entradas de terceros; {result.MissingCount} con archivo no encontrado.",
+            ActivityKind.Success);
+
+        if (showToast)
+        {
+            ShowToast(
+                $"Autoruns encontró {result.MissingCount} entradas con archivo no encontrado.",
+                result.MissingCount > 0 ? ActivityKind.Warning : ActivityKind.Success);
+        }
+    }
+
+    private void UpdateAutorunsResult(AutorunsAnalysisResult result)
+    {
+        if (!result.Available)
+        {
+            AutorunsStatusText.Text =
+                "Autoruns no está instalado. Pulsa “Abrir / obtener Autoruns” para ir a la página oficial.";
+            return;
+        }
+
+        if (result.Entries.Count == 0)
+        {
+            AutorunsStatusText.Text = result.Message;
+            return;
+        }
+
+        AutorunsStatusText.Text =
+            $"Análisis avanzado: {result.ThirdPartyCount} entradas de terceros. " +
+            $"{result.MissingCount} apuntan a archivos que ya no se encontraron.";
+    }
+
+    private void OpenAutorunsDownload_Click(object sender, RoutedEventArgs e) =>
+        OpenShell(AutorunsService.OfficialPage);
+
+    private void OpenAutoruns_Click(object sender, RoutedEventArgs e)
+    {
+        var gui = _autoruns.FindGui();
+        if (!string.IsNullOrWhiteSpace(gui))
+        {
+            OpenShell(gui);
+            return;
+        }
+
+        OpenShell(AutorunsService.OfficialPage);
+    }
+
+    private int CountRunningManageableServices()
+    {
+        var count = 0;
+
+        foreach (var name in SafeProfile.UserManageableServices)
+        {
+            var info = _serviceManager.GetInfo(name, "", "");
+            if (info is not null &&
+                string.Equals(info.State, "Running", StringComparison.OrdinalIgnoreCase))
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private async Task RefreshMetricsAsync()
@@ -444,8 +605,9 @@ public partial class MainWindow : Window
     private async void OptimizeSafe_Click(object sender, RoutedEventArgs e)
     {
         var answer = MessageBox.Show(
-            "Se creará una copia de seguridad y se deshabilitarán únicamente los servicios incluidos en el perfil seguro.\n\n¿Aplicar ahora?",
-            "Optimización segura",
+            "La app medirá el estado actual, aplicará únicamente el perfil seguro y volverá a medir para mostrarte el resultado.\n\n" +
+            "Se creará una copia de seguridad antes de cambiar servicios o tareas. ¿Continuar?",
+            "Optimizar ahora",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
 
@@ -455,12 +617,41 @@ public partial class MainWindow : Window
             return;
         }
 
-        await RunOperationAsync(
-            "Aplicando optimización segura",
-            "Deteniendo servicios bajo demanda y actualizando tareas…",
-            () => _optimizer.OptimizeSafeAsync(Log));
+        try
+        {
+            var before = await _smartAnalysis.CaptureAsync(includeAutoruns: false);
 
-        RefreshBackupStatus();
+            await RunOperationAsync(
+                "Aplicando optimización segura",
+                "Deteniendo componentes bajo demanda y actualizando tareas aprobadas…",
+                () => _optimizer.OptimizeSafeAsync(Log));
+
+            await Task.Delay(1200);
+            var after = await _smartAnalysis.CaptureAsync(includeAutoruns: false);
+
+            var ramSavedMb = Math.Max(
+                0,
+                (before.UsedRamGb - after.UsedRamGb) * 1024d);
+
+            var processReduction = Math.Max(
+                0,
+                before.ProcessCount - after.ProcessCount);
+
+            OptimizationResultText.Text =
+                $"Resultado de esta sesión: RAM {before.UsedRamGb:N2} → {after.UsedRamGb:N2} GB " +
+                $"(≈ {ramSavedMb:N0} MB menos). Procesos {before.ProcessCount} → {after.ProcessCount} " +
+                $"({processReduction} menos). " +
+                $"Las cifras pueden variar unos minutos después por procesos normales de Windows.";
+
+            RefreshBackupStatus();
+            RefreshStartup();
+        }
+        catch (Exception ex)
+        {
+            Log($"Error midiendo optimización: {ex.Message}");
+            OptimizationResultText.Text =
+                "La optimización terminó, pero no fue posible calcular la comparación antes/después.";
+        }
     }
 
     private async void Restore_Click(object sender, RoutedEventArgs e)
@@ -1071,66 +1262,252 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void LoadWinUtil_Click(object sender, RoutedEventArgs e) =>
-        await LoadWinUtilCatalogAsync(forceRefresh: false);
-
     private async void RefreshWinUtil_Click(object sender, RoutedEventArgs e) =>
-        await LoadWinUtilCatalogAsync(forceRefresh: true);
+        await LoadWinUtilCatalogAsync(forceRefresh: true, showFeedback: true);
 
-    private async Task LoadWinUtilCatalogAsync(bool forceRefresh)
+    private async Task LoadWinUtilCatalogAsync(
+        bool forceRefresh,
+        bool showFeedback = true)
     {
-        BeginActivity(
-            forceRefresh ? "Actualizando catálogo WinUtil" : "Cargando catálogo WinUtil",
-            "Leyendo únicamente JSON desde la versión fijada…");
+        if (showFeedback)
+        {
+            BeginActivity(
+                forceRefresh ? "Actualizando WinUtil" : "Cargando WinUtil",
+                "Leyendo el catálogo fijado y preparando las opciones compatibles…");
+        }
 
         try
         {
             WinUtilStatusText.Text = forceRefresh
-                ? "Actualizando catálogo fijado…"
-                : "Cargando catálogo fijado…";
+                ? "Actualizando opciones…"
+                : "Cargando opciones…";
 
             var result = await _winUtil.LoadAsync(forceRefresh);
-            WinUtilGrid.ItemsSource = result.Tweaks;
+            _winUtilAllTweaks = result.Tweaks;
 
+            ApplyWinUtilFilter();
+
+            var applicable = result.Tweaks.Count(x => _winUtilNative.Supports(x.Id));
             var source = result.FromCache ? "caché local" : "GitHub oficial";
+
             WinUtilStatusText.Text =
-                $"WinUtil {result.Version} · {result.Tweaks.Count} opciones · {source}";
+                $"{applicable} aplicables · {result.Tweaks.Count} totales · {source}";
 
             Log(
-                $"WinUtil catálogo cargado: {result.Version}, commit {result.Commit[..12]}, " +
-                $"{result.Tweaks.Count} tweaks, fuente={source}. Ningún tweak fue ejecutado.");
+                $"WinUtil cargado: {result.Version}, commit {result.Commit[..12]}, " +
+                $"{applicable} opciones portadas nativamente de {result.Tweaks.Count}.");
 
-            EndActivity(
-                "Catálogo WinUtil listo",
-                $"{result.Tweaks.Count} tweaks cargados desde {source}.",
-                ActivityKind.Success);
+            if (showFeedback)
+            {
+                EndActivity(
+                    "WinUtil listo",
+                    $"{applicable} opciones se pueden aplicar de forma nativa y reversible.",
+                    ActivityKind.Success);
 
+                ShowToast(
+                    $"WinUtil: {applicable} opciones listas para aplicar.",
+                    ActivityKind.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            WinUtilStatusText.Text = "No se pudo cargar WinUtil";
+            Log($"Error cargando catálogo WinUtil: {ex.Message}");
+
+            if (showFeedback)
+            {
+                EndActivity(
+                    "Error cargando WinUtil",
+                    ex.Message,
+                    ActivityKind.Error);
+
+                ShowToast(
+                    "No se pudo cargar el catálogo. No se ejecutó código remoto.",
+                    ActivityKind.Error);
+            }
+        }
+    }
+
+    private void WinUtilShowAllToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        ApplyWinUtilFilter();
+    }
+
+    private void ApplyWinUtilFilter()
+    {
+        if (WinUtilGrid is null)
+            return;
+
+        var showAll = WinUtilShowAllToggle?.IsChecked == true;
+
+        var items = _winUtilAllTweaks
+            .Where(x => showAll || _winUtilNative.Supports(x.Id))
+            .OrderByDescending(x => _winUtilNative.Supports(x.Id))
+            .ThenBy(x => x.Category, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(x => x.Content, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        WinUtilGrid.ItemsSource = items;
+
+        if (items.Count > 0)
+            WinUtilGrid.SelectedIndex = 0;
+        else
+            ResetWinUtilDetails();
+    }
+
+    private void WinUtilGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        UpdateWinUtilSelection();
+    }
+
+    private void UpdateWinUtilSelection()
+    {
+        if (WinUtilGrid.SelectedItem is not WinUtilTweak tweak)
+        {
+            ResetWinUtilDetails();
+            return;
+        }
+
+        var supported = _winUtilNative.Supports(tweak.Id);
+        var state = supported
+            ? _winUtilNative.GetState(tweak.Id)
+            : "Solo consulta";
+
+        WinUtilSelectedTitleText.Text = tweak.Content;
+        WinUtilSelectedStateText.Text = supported
+            ? $"{state} · Aplicación nativa"
+            : $"{tweak.Risk} · Solo consulta";
+
+        WinUtilSelectedDescriptionText.Text = tweak.Description;
+        WinUtilSelectedCategoryText.Text =
+            $"Categoría: {tweak.Category}" +
+            (string.IsNullOrWhiteSpace(tweak.Presets)
+                ? ""
+                : $" · Perfiles WinUtil: {tweak.Presets}");
+
+        WinUtilSelectedImpactText.Text = supported
+            ? GetWinUtilImpactText(tweak.Id)
+            : "Esta opción se muestra para que entiendas qué propone WinUtil. " +
+              "Windows11Optimizer no la ejecutará hasta que exista una implementación nativa, revisada y reversible.";
+
+        WinUtilTechnicalText.Text =
+            $"ID: {tweak.Id}{Environment.NewLine}" +
+            $"Nivel: {tweak.Risk}{Environment.NewLine}" +
+            $"Acciones declaradas: {tweak.Actions}{Environment.NewLine}" +
+            $"Nombre original: {tweak.OriginalContent}";
+
+        WinUtilApplyButton.IsEnabled =
+            supported &&
+            !string.Equals(state, "Aplicado", StringComparison.OrdinalIgnoreCase);
+
+        WinUtilRestoreButton.IsEnabled =
+            supported &&
+            _winUtilNative.HasBackup(tweak.Id);
+    }
+
+    private void ResetWinUtilDetails()
+    {
+        WinUtilSelectedTitleText.Text = "Selecciona una opción";
+        WinUtilSelectedStateText.Text = "Sin seleccionar";
+        WinUtilSelectedDescriptionText.Text =
+            "Selecciona una opción de la lista para ver una explicación sencilla.";
+        WinUtilSelectedImpactText.Text =
+            "No se realizará ningún cambio hasta que pulses Aplicar.";
+        WinUtilSelectedCategoryText.Text = "";
+        WinUtilTechnicalText.Text = "ID, acciones y perfil aparecerán aquí.";
+        WinUtilApplyButton.IsEnabled = false;
+        WinUtilRestoreButton.IsEnabled = false;
+    }
+
+    private void ApplySelectedWinUtil_Click(object sender, RoutedEventArgs e)
+    {
+        if (WinUtilGrid.SelectedItem is not WinUtilTweak tweak ||
+            !_winUtilNative.Supports(tweak.Id))
+        {
             ShowToast(
-                $"WinUtil: {result.Tweaks.Count} opciones cargadas sin realizar cambios.",
+                "Esta opción todavía es solo informativa.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            $"Se aplicará “{tweak.Content}”.\n\n" +
+            "La app guardará primero el valor actual para que puedas deshacer el cambio. ¿Continuar?",
+            "Aplicar ajuste",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            _winUtilNative.Apply(tweak.Id);
+            UpdateWinUtilSelection();
+
+            Log($"WinUtil nativo aplicado: {tweak.Id}");
+            ShowToast(
+                $"Aplicado: {tweak.Content}.",
                 ActivityKind.Success);
         }
         catch (Exception ex)
         {
-            WinUtilStatusText.Text = "Error cargando WinUtil";
-            Log($"Error cargando catálogo WinUtil: {ex.Message}");
-
-            EndActivity(
-                "Error cargando WinUtil",
-                ex.Message,
-                ActivityKind.Error);
-
+            Log($"Error aplicando WinUtil nativo {tweak.Id}: {ex.Message}");
             ShowToast(
-                "WinUtil no pudo cargarse. No se ejecutó ningún código remoto.",
+                "No se pudo aplicar este ajuste.",
                 ActivityKind.Error);
-
-            MessageBox.Show(
-                "No se pudo cargar el catálogo de WinUtil. La app no ejecutó ningún código remoto.\n\n" +
-                ex.Message,
-                "WinUtil",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
         }
     }
+
+    private void RestoreSelectedWinUtil_Click(object sender, RoutedEventArgs e)
+    {
+        if (WinUtilGrid.SelectedItem is not WinUtilTweak tweak ||
+            !_winUtilNative.Supports(tweak.Id))
+        {
+            return;
+        }
+
+        try
+        {
+            _winUtilNative.Restore(tweak.Id);
+            UpdateWinUtilSelection();
+
+            Log($"WinUtil nativo restaurado: {tweak.Id}");
+            ShowToast(
+                $"Cambio deshecho: {tweak.Content}.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error restaurando WinUtil nativo {tweak.Id}: {ex.Message}");
+            ShowToast(
+                "No se pudo deshacer este ajuste.",
+                ActivityKind.Error);
+        }
+    }
+
+    private static string GetWinUtilImpactText(string id) => id switch
+    {
+        "WPFToggleShowExt" =>
+            "Hace visibles extensiones como .exe, .jpg o .txt en el Explorador de archivos. " +
+            "Solo cambia una preferencia del usuario actual.",
+
+        "WPFToggleHiddenFiles" =>
+            "Permite ver archivos y carpetas marcados como ocultos. " +
+            "No elimina ni modifica esos archivos.",
+
+        "WPFTweaksEndTaskOnTaskbar" =>
+            "Añade “Finalizar tarea” al menú del clic derecho de las aplicaciones en la barra de tareas.",
+
+        "WPFToggleTaskbarSearch" =>
+            "Muestra el acceso a Búsqueda en la barra de tareas. Puedes deshacerlo para recuperar tu estado anterior.",
+
+        "WPFToggleDarkMode" =>
+            "Activa el tema oscuro de Windows y de aplicaciones compatibles para el usuario actual.",
+
+        _ =>
+            "Cambia una preferencia del usuario actual y conserva una copia del valor anterior."
+    };
 
     private void DarkModeToggle_Checked(object sender, RoutedEventArgs e)
     {
