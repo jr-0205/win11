@@ -1289,3 +1289,319 @@ Nunca:
 ni:
 
 > "Parece una plantilla."
+
+
+---
+
+# 35. MÓDULO OBLIGATORIO — QA VISUAL, DPI Y PREVENCIÓN DE OVERFLOW
+
+Este módulo es **obligatorio** para cualquier modificación de frontend.
+
+Una pantalla que compila puede seguir estando rota visualmente.
+
+Nunca considerar terminado un cambio de UI únicamente porque:
+
+- XAML compile;
+- los handlers existan;
+- los bindings no den error;
+- la aplicación abra.
+
+## 35.1 Matriz mínima de estados
+
+Todo control interactivo modificado o creado debe revisarse en:
+
+- normal;
+- hover;
+- pressed;
+- selected;
+- disabled;
+- keyboard focus;
+- loading cuando corresponda.
+
+Para cada estado verificar:
+
+- texto visible;
+- contraste suficiente;
+- fondo correcto;
+- borde correcto;
+- cursor correcto;
+- tamaño estable;
+- contenido no recortado.
+
+### Regla WPF crítica
+
+Los templates nativos de WPF/Windows pueden ignorar parcialmente:
+
+- Background;
+- Foreground;
+- BorderBrush;
+
+especialmente en:
+
+- `Button.IsEnabled=False`;
+- `TabItem.IsSelected=True`;
+- focus;
+- pressed;
+- controles bajo tema oscuro.
+
+Si un control cambia a blanco, pierde texto o rompe el sistema visual en alguno de esos estados:
+
+**crear o ajustar un `ControlTemplate` propio.**
+
+No intentar resolver únicamente cambiando `Foreground` si el template nativo sigue dibujando otra superficie.
+
+## 35.2 Prueba obligatoria de temas
+
+Probar siempre:
+
+### Dark
+
+- normal;
+- selected;
+- disabled;
+- hover;
+- focus.
+
+### Light
+
+- normal;
+- selected;
+- disabled;
+- hover;
+- focus.
+
+En dark mode está prohibido que aparezcan accidentalmente:
+
+- botones blancos;
+- tabs blancos;
+- TextBox blancos no diseñados;
+- texto blanco sobre fondo blanco;
+- texto oscuro sobre fondo oscuro.
+
+En light mode está prohibido:
+
+- texto demasiado claro;
+- bordes invisibles;
+- selección indistinguible del fondo.
+
+## 35.3 DPI y escalado de Windows
+
+La UI debe validarse como mínimo para:
+
+- 100 %;
+- 125 %;
+- 150 %.
+
+Caso crítico obligatorio:
+
+**1366×768 @ 150 %**
+
+El tamaño mínimo de la ventana debe poder entrar razonablemente en el área útil de este escenario.
+
+No fijar un `MinWidth` excesivo solo porque se vea bien a 1920×1080.
+
+Como referencia para esta app:
+
+- preferir `MinWidth` alrededor de 760–820 DIPs;
+- usar layouts adaptativos;
+- evitar depender de 980+ DIPs mínimos.
+
+Si el contenido necesita más espacio:
+
+**adaptar el layout, no obligar al usuario a tener una pantalla mayor.**
+
+## 35.4 Layout adaptativo
+
+Una fila de 4 módulos no puede mantenerse siempre en 4 columnas.
+
+Usar comportamiento adaptativo.
+
+Referencia:
+
+- ancho amplio → 4 columnas;
+- ancho medio/compacto → 2 columnas;
+- ancho muy limitado → 1 columna cuando sea necesario.
+
+Aplicar especialmente a:
+
+- métricas;
+- tarjetas de estado;
+- virtualización;
+- grupos de acciones.
+
+Preferir:
+
+- Grid;
+- UniformGrid adaptativo;
+- WrapPanel;
+- `Auto`;
+- `*`.
+
+Evitar:
+
+- tamaños absolutos innecesarios;
+- columnas rígidas que recorten contenido.
+
+## 35.5 Overflow
+
+Antes de terminar revisar:
+
+- ningún texto sale de su contenedor;
+- ningún botón queda cortado;
+- ninguna fila de botones desaparece;
+- ninguna tabla obliga a scroll horizontal accidental sin motivo;
+- los headers de navegación siguen accesibles;
+- ningún mensaje largo rompe la ventana.
+
+Textos variables deben considerar:
+
+- traducciones más largas;
+- nombres de servicios;
+- rutas;
+- mensajes de error;
+- nombres de aplicaciones.
+
+Usar cuando corresponda:
+
+- `TextWrapping="Wrap"`;
+- `TextTrimming`;
+- Tooltip con valor completo;
+- columnas `*`;
+- MinWidth razonable.
+
+## 35.6 Navegación
+
+Para `TabControl`:
+
+- el tab activo debe ser evidente;
+- el texto activo debe conservar contraste;
+- ningún tab seleccionado puede usar el template blanco por defecto en dark mode;
+- headers largos deben seguir siendo accesibles;
+- a anchos reducidos se permite que el TabPanel se reorganice.
+
+Si la cantidad de tabs crece hasta romper la navegación:
+
+evaluar navegación lateral o un selector adaptativo.
+
+No ocultar tabs fuera de la ventana.
+
+## 35.7 Botones deshabilitados
+
+Un botón disabled debe seguir explicando qué acción representa.
+
+Debe:
+
+- conservar su texto;
+- tener contraste menor pero legible;
+- verse claramente inactivo;
+- no convertirse en un rectángulo vacío;
+- no adoptar el fondo blanco nativo en dark mode.
+
+Referencia visual:
+
+- SurfaceAlt;
+- MutedForeground;
+- opacity aproximada 0.55–0.70;
+- cursor Arrow.
+
+## 35.8 Contenido dinámico
+
+Probar estados reales y estados extremos.
+
+Ejemplos:
+
+- sin backup;
+- con backup;
+- sin reinicio pendiente;
+- con reinicio pendiente;
+- servicio Running;
+- servicio Stopped;
+- servicio protegido;
+- lista vacía;
+- entrada huérfana;
+- error de WinUtil;
+- texto largo.
+
+No diseñar únicamente para el estado ideal.
+
+## 35.9 Layout rounding y DPI
+
+En ventanas principales usar cuando sea apropiado:
+
+`UseLayoutRounding="True"`
+
+y:
+
+`SnapsToDevicePixels="True"`
+
+para reducir:
+
+- bordes borrosos;
+- líneas de 1 px inconsistentes;
+- artefactos a 125/150 %.
+
+## 35.10 Gate de aceptación visual
+
+Antes de declarar terminado un cambio de frontend:
+
+1. Compilar.
+2. Verificar handlers.
+3. Verificar bindings relevantes.
+4. Revisar dark mode.
+5. Revisar light mode.
+6. Revisar estados disabled.
+7. Revisar estados selected.
+8. Revisar focus mediante teclado.
+9. Revisar ventana compacta.
+10. Revisar 1366×768.
+11. Considerar 125 %.
+12. Considerar 150 %.
+13. Revisar textos largos.
+14. Revisar overflow.
+15. Revisar contraste.
+16. Revisar que las acciones sigan siendo comprensibles.
+
+Cuando sea posible ejecutar la app:
+
+**hacer inspección visual real o mediante capturas.**
+
+Cuando el entorno no permita ejecutar/renderizar WPF:
+
+- realizar validación estática;
+- no afirmar que la UI fue visualmente verificada;
+- pedir o utilizar una captura real en la siguiente iteración;
+- tratar cualquier captura del usuario como prueba de regresión.
+
+## 35.11 Regla de regresión por captura
+
+Si el usuario proporciona una captura con un fallo:
+
+1. identificar el control exacto;
+2. identificar el estado exacto;
+3. buscar la causa raíz en Style/Template/Layout;
+4. corregir el sistema reutilizable, no solo un botón;
+5. comprobar otros controles que compartan ese Style;
+6. añadir la nueva clase de fallo a esta skill si no estaba contemplada.
+
+Una captura de regresión tiene prioridad sobre la suposición de que "debería verse bien".
+
+## 35.12 Fallos que bloquean una entrega
+
+No considerar terminado el frontend si existe cualquiera de estos casos:
+
+- control blanco accidental en dark mode;
+- texto invisible;
+- botón sin texto;
+- tab seleccionado ilegible;
+- controles superpuestos;
+- controles cortados;
+- navegación inaccesible;
+- scroll horizontal accidental;
+- diálogo fuera de pantalla;
+- contenido que requiere una resolución mayor que la declarada;
+- disabled indistinguible;
+- selección indistinguible;
+- focus invisible;
+- texto técnico sin explicación en una pantalla para usuario normal.
+
+Estos fallos son **release blockers de UI**.
