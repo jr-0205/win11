@@ -4,6 +4,10 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Windows11Optimizer", "src\Windows11Optimizer\Windows11Optimizer.csproj", "{E13A0D1E-81C1-4D36-B03E-12A75B60E191}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Windows11Optimizer.Core", "src\Windows11Optimizer.Core\Windows11Optimizer.Core.csproj", "{A8B8A5E1-7C7E-4E91-A100-8A8C40B79811}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Windows11Optimizer.Agent", "src\Windows11Optimizer.Agent\Windows11Optimizer.Agent.csproj", "{B9C9B6F2-8D8F-4FA2-B211-9B9D51C80922}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -14,5 +18,13 @@ Global
         {E13A0D1E-81C1-4D36-B03E-12A75B60E191}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {E13A0D1E-81C1-4D36-B03E-12A75B60E191}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {E13A0D1E-81C1-4D36-B03E-12A75B60E191}.Release|Any CPU.Build.0 = Release|Any CPU
+        {A8B8A5E1-7C7E-4E91-A100-8A8C40B79811}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {A8B8A5E1-7C7E-4E91-A100-8A8C40B79811}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {A8B8A5E1-7C7E-4E91-A100-8A8C40B79811}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {A8B8A5E1-7C7E-4E91-A100-8A8C40B79811}.Release|Any CPU.Build.0 = Release|Any CPU
+        {B9C9B6F2-8D8F-4FA2-B211-9B9D51C80922}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {B9C9B6F2-8D8F-4FA2-B211-9B9D51C80922}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {B9C9B6F2-8D8F-4FA2-B211-9B9D51C80922}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {B9C9B6F2-8D8F-4FA2-B211-9B9D51C80922}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
 EndGlobal
