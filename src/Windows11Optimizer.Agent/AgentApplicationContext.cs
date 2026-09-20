@@ -102,6 +102,9 @@ internal sealed class AgentApplicationContext : ApplicationContext
 
     public static void SignalExistingInstance(string[] args)
     {
+        if (args.Any(x => x.Equals("--agent", StringComparison.OrdinalIgnoreCase)))
+            return;
+
         var eventName = args.Any(x => x.Equals("--settings", StringComparison.OrdinalIgnoreCase))
             ? ShowSettingsEventName
             : ShowFocusEventName;
