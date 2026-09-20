@@ -324,10 +324,12 @@
 
                     <StackPanel Grid.Row="3">
                         <WrapPanel>
-                            <Button Content="Usar modo normal"
+                            <Button x:Name="UseNormalVirtualizationButton"
+                                    Content="Usar modo normal"
                                     Click="SetVirtualizationNormal_Click"
                                     ToolTip="Permite que Windows cargue su hipervisor cuando sea necesario."/>
-                            <Button Content="Preparar para VMware"
+                            <Button x:Name="UseVmwareVirtualizationButton"
+                                    Content="Preparar para VMware"
                                     Click="SetVirtualizationVmware_Click"
                                     ToolTip="Evita que el hipervisor de Windows se cargue en el próximo arranque."/>
                             <Button Content="Volver al estado original"
