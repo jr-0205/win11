@@ -15,8 +15,16 @@ public sealed class BackupService
     public async Task SaveIfMissingAsync(BackupState backup)
     {
         if (Exists) return;
+        await SaveAsync(backup);
+    }
+
+    public async Task SaveAsync(BackupState backup)
+    {
         Directory.CreateDirectory(DirectoryPath);
-        var json = JsonSerializer.Serialize(backup, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(
+            backup,
+            new JsonSerializerOptions { WriteIndented = true });
+
         await File.WriteAllTextAsync(FilePath, json);
     }
 
