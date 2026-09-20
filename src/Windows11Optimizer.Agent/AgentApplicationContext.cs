@@ -73,6 +73,7 @@ internal sealed class AgentApplicationContext : ApplicationContext
         menu.Items.Add("Detener Focus Boost", null, (_, _) => StopFocus());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Salir del agente", null, (_, _) => ExitAgent());
+        AgentVisualTheme.Apply(menu);
         _tray.ContextMenuStrip = menu;
 
         _focusWatchTimer.Interval = 2000;
@@ -92,11 +93,10 @@ internal sealed class AgentApplicationContext : ApplicationContext
         var applied = ApplyHotkeys(_settings);
         if (!applied.Success)
         {
-            _tray.ShowBalloonTip(
-                6000,
+            FluentNotificationForm.ShowNotification(
                 "Hotkeys no disponibles",
                 applied.Message,
-                ToolTipIcon.Warning);
+                AgentNotificationTone.Warning);
         }
     }
 
@@ -271,11 +271,10 @@ internal sealed class AgentApplicationContext : ApplicationContext
 
         if (!File.Exists(path))
         {
-            _tray.ShowBalloonTip(
-                5000,
+            FluentNotificationForm.ShowNotification(
                 "Windows11Optimizer",
                 "No se encontró Windows11Optimizer.exe junto al agente.",
-                ToolTipIcon.Warning);
+                AgentNotificationTone.Warning);
             return;
         }
 
@@ -298,19 +297,17 @@ internal sealed class AgentApplicationContext : ApplicationContext
         try
         {
             _focus.Restore();
-            _tray.ShowBalloonTip(
-                2500,
+            FluentNotificationForm.ShowNotification(
                 "Focus Boost",
                 "Estado restaurado.",
-                ToolTipIcon.Info);
+                AgentNotificationTone.Success);
         }
         catch (Exception ex)
         {
-            _tray.ShowBalloonTip(
-                5000,
+            FluentNotificationForm.ShowNotification(
                 "Focus Boost",
                 ex.Message,
-                ToolTipIcon.Warning);
+                AgentNotificationTone.Warning);
         }
     }
 
