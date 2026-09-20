@@ -9,6 +9,8 @@ using Windows11Optimizer.Core;
 using Windows11Optimizer.Models;
 using Windows11Optimizer.Profiles;
 using Windows11Optimizer.Services;
+using Wpf.Ui;
+using Wpf.Ui.Controls;
 
 namespace Windows11Optimizer;
 
@@ -38,14 +40,15 @@ public partial class MainWindow : Window
     private IReadOnlyList<WinUtilTweak> _winUtilAllTweaks = Array.Empty<WinUtilTweak>();
     private AutorunsAnalysisResult? _lastAutorunsAnalysis;
     private readonly DispatcherTimer _timer;
-    private readonly DispatcherTimer _toastTimer;
+    private readonly SnackbarService _snackbar = new();
     private bool _refreshingMetrics;
     private bool _suppressThemeEvent;
 
     public MainWindow()
     {
-        _theme.ApplySavedTheme();
         InitializeComponent();
+        _snackbar.SetSnackbarPresenter(SnackbarPresenter);
+        _theme.ApplySavedTheme();
 
         _optimizer = new OptimizationService(_serviceManager, _taskManager, _backup);
         _safeActions = new SafeActionEngine(_serviceManager, _winUtilNative);
@@ -64,18 +67,10 @@ public partial class MainWindow : Window
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _timer.Tick += async (_, _) => await RefreshMetricsAsync();
 
-        _toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.5) };
-        _toastTimer.Tick += (_, _) =>
-        {
-            _toastTimer.Stop();
-            ToastBorder.Visibility = Visibility.Collapsed;
-        };
-
         Loaded += MainWindow_Loaded;
         Closed += (_, _) =>
         {
             _timer.Stop();
-            _toastTimer.Stop();
             _focusBoost.Dispose();
         };
     }
@@ -2086,23 +2081,28 @@ public partial class MainWindow : Window
     {
         Dispatcher.Invoke(() =>
         {
-            ToastText.Text = message;
-            ToastIcon.Text = kind switch
+            var title = kind switch
             {
-                ActivityKind.Success => "✓",
-                ActivityKind.Warning => "!",
-                ActivityKind.Error => "×",
-                _ => "●"
+                ActivityKind.Success => "Listo",
+                ActivityKind.Warning => "Revisa esto",
+                ActivityKind.Error => "Ocurrió un problema",
+                _ => "Windows 11 Optimizer"
             };
 
-            ToastBorder.SetResourceReference(
-                Border.BackgroundProperty,
-                ResourceFor(kind));
+            var appearance = kind switch
+            {
+                ActivityKind.Success => ControlAppearance.Success,
+                ActivityKind.Warning => ControlAppearance.Caution,
+                ActivityKind.Error => ControlAppearance.Danger,
+                _ => ControlAppearance.Info
+            };
 
-            ToastBorder.Visibility = Visibility.Visible;
-
-            _toastTimer.Stop();
-            _toastTimer.Start();
+            _snackbar.Show(
+                title,
+                message,
+                appearance,
+                icon: null,
+                timeout: TimeSpan.FromSeconds(3.6));
         });
     }
 
