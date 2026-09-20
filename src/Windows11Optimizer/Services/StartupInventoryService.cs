@@ -98,12 +98,55 @@ public sealed class StartupInventoryService
             RegistryHive = entry.RegistryHive,
             RegistryPath = entry.RegistryPath,
             RegistryValueName = entry.RegistryValueName,
-            Restored = false
+            Restored = false,
+            Reason = "OrphanCleanup"
         };
 
         SaveBackup(backup);
 
         key.DeleteValue(entry.RegistryValueName, throwOnMissingValue: true);
+    }
+
+    public void DisableStartupEntry(StartupEntry entry)
+    {
+        if (!entry.CanDisableAtStartup)
+        {
+            throw new InvalidOperationException(
+                "Esta entrada no puede administrarse de forma reversible desde Windows11Optimizer.");
+        }
+
+        var hive = ResolveHive(entry.RegistryHive);
+
+        using var key = hive.OpenSubKey(entry.RegistryPath, writable: true);
+        if (key is null)
+            throw new InvalidOperationException(
+                "La ubicación de inicio ya no existe.");
+
+        var currentValue = Convert.ToString(
+            key.GetValue(
+                entry.RegistryValueName,
+                null,
+                RegistryValueOptions.DoNotExpandEnvironmentNames));
+
+        if (currentValue is null)
+            throw new InvalidOperationException(
+                "La entrada seleccionada ya no existe.");
+
+        SaveBackup(new StartupEntryBackup
+        {
+            RemovedAt = DateTime.Now,
+            Name = entry.Name,
+            Command = currentValue,
+            RegistryHive = entry.RegistryHive,
+            RegistryPath = entry.RegistryPath,
+            RegistryValueName = entry.RegistryValueName,
+            Restored = false,
+            Reason = "DisabledByUser"
+        });
+
+        key.DeleteValue(
+            entry.RegistryValueName,
+            throwOnMissingValue: true);
     }
 
     public StartupEntryBackup RestoreLastRemoved()
