@@ -190,7 +190,46 @@ internal sealed class AgentApplicationContext : ApplicationContext
 
     private (bool Success, string Message) ApplyHotkeys(AgentSettings settings)
     {
+        var previousSettings = _settings;
+        var hadPreviousRegistration =
+            _registered.Mini > 0 || _registered.Full > 0;
+
         UnregisterHotkeys();
+
+        if (TryRegisterHotkeyPair(
+                settings,
+                out var registered,
+                out var error))
+        {
+            _registered = registered;
+
+            return (
+                true,
+                $"Hotkeys activos: {settings.MiniFocusHotkey} y {settings.FullUiHotkey}.");
+        }
+
+        if (hadPreviousRegistration &&
+            TryRegisterHotkeyPair(
+                previousSettings,
+                out var restored,
+                out _))
+        {
+            _registered = restored;
+            return (
+                false,
+                error + " Se conservaron las combinaciones anteriores.");
+        }
+
+        return (false, error);
+    }
+
+    private bool TryRegisterHotkeyPair(
+        AgentSettings settings,
+        out RegisteredHotkeys registered,
+        out string error)
+    {
+        registered = default;
+        error = "";
 
         if (!_hotkeys.TryRegister(
                 settings.MiniFocusHotkey,
@@ -198,7 +237,8 @@ internal sealed class AgentApplicationContext : ApplicationContext
                 out var miniId,
                 out var miniError))
         {
-            return (false, miniError);
+            error = miniError;
+            return false;
         }
 
         if (!_hotkeys.TryRegister(
@@ -208,14 +248,12 @@ internal sealed class AgentApplicationContext : ApplicationContext
                 out var fullError))
         {
             _hotkeys.Unregister(miniId);
-            return (false, fullError);
+            error = fullError;
+            return false;
         }
 
-        _registered = new RegisteredHotkeys(miniId, fullId);
-
-        return (
-            true,
-            $"Hotkeys activos: {settings.MiniFocusHotkey} y {settings.FullUiHotkey}.");
+        registered = new RegisteredHotkeys(miniId, fullId);
+        return true;
     }
 
     private void UnregisterHotkeys()
