@@ -86,7 +86,7 @@ public sealed class WindowsServiceManager
                         ServiceControllerStatus.Stopped,
                         TimeSpan.FromSeconds(12)));
             }
-            catch (System.ServiceProcess.TimeoutException)
+            catch (TimeoutException)
             {
                 // Aunque el servicio tarde en detenerse, impedir el próximo
                 // arranque sigue siendo útil y reversible.
