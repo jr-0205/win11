@@ -1852,6 +1852,8 @@ public partial class MainWindow : Window
         WinUtilSelectedStateText.Text = state;
         WinUtilSelectedDescriptionText.Text = tweak.Description;
         WinUtilSelectedImpactText.Text = GetWinUtilImpactText(tweak.Id);
+        WinUtilSelectedRiskText.Text = GetWinUtilRiskText(tweak.Id);
+        WinUtilSelectedRevertText.Text = GetWinUtilRevertText(tweak.Id);
 
         WinUtilApplyButton.IsEnabled =
             !string.Equals(
@@ -1871,6 +1873,9 @@ public partial class MainWindow : Window
             "Selecciona un ajuste para ver una explicación sencilla.";
         WinUtilSelectedImpactText.Text =
             "No se realizará ningún cambio hasta que pulses Aplicar.";
+        WinUtilSelectedRiskText.Text = "Muy bajo";
+        WinUtilSelectedRevertText.Text =
+            "La app guarda el valor anterior antes de aplicar.";
         WinUtilApplyButton.IsEnabled = false;
         WinUtilRestoreButton.IsEnabled = false;
     }
@@ -1952,6 +1957,36 @@ public partial class MainWindow : Window
 
         _ =>
             "Cambia una preferencia sencilla y guarda el valor anterior para poder deshacerla."
+    };
+
+    private static string GetWinUtilRiskText(string id) => id switch
+    {
+        "WPFTweaksEndTaskOnTaskbar" =>
+            "Muy bajo. Habilita un acceso para finalizar aplicaciones; usar esa acción puede cerrar trabajo no guardado.",
+
+        _ =>
+            "Muy bajo. Solo cambia una preferencia del usuario actual."
+    };
+
+    private static string GetWinUtilRevertText(string id) => id switch
+    {
+        "WPFToggleShowExt" =>
+            "Pulsa Deshacer para recuperar exactamente la preferencia anterior de extensiones.",
+
+        "WPFToggleHiddenFiles" =>
+            "Pulsa Deshacer para recuperar la visibilidad anterior de archivos ocultos.",
+
+        "WPFTweaksEndTaskOnTaskbar" =>
+            "Pulsa Deshacer para recuperar el valor anterior del menú de la barra de tareas.",
+
+        "WPFToggleTaskbarSearch" =>
+            "Pulsa Deshacer para recuperar el estado anterior de Búsqueda en la barra.",
+
+        "WPFToggleDarkMode" =>
+            "Pulsa Deshacer para restaurar los valores de tema que existían antes de aplicar.",
+
+        _ =>
+            "Pulsa Deshacer para restaurar el valor guardado antes del cambio."
     };
 
     private void DarkModeToggle_Checked(object sender, RoutedEventArgs e)
