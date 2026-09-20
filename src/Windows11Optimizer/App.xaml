@@ -3,14 +3,86 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <SolidColorBrush x:Key="AppBackgroundBrush" Color="#F3F5F8"/>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="SurfaceAltBrush" Color="#F7F8FA"/>
+        <SolidColorBrush x:Key="ForegroundBrush" Color="#1A1D23"/>
+        <SolidColorBrush x:Key="MutedForegroundBrush" Color="#626A76"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#D7DBE2"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#2563EB"/>
+        <SolidColorBrush x:Key="ButtonBrush" Color="#F3F4F6"/>
+        <SolidColorBrush x:Key="ButtonHoverBrush" Color="#E8ECF2"/>
+        <SolidColorBrush x:Key="SuccessBrush" Color="#1E7A46"/>
+        <SolidColorBrush x:Key="WarningBrush" Color="#A26300"/>
+        <SolidColorBrush x:Key="ErrorBrush" Color="#B23A42"/>
+
+        <Style TargetType="Window">
+            <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+        </Style>
+
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+        </Style>
+
         <Style TargetType="Button">
             <Setter Property="Margin" Value="4"/>
             <Setter Property="Padding" Value="12,7"/>
             <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
+
         <Style TargetType="GroupBox">
             <Setter Property="Margin" Value="8"/>
             <Setter Property="Padding" Value="8"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        </Style>
+
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        </Style>
+
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        </Style>
+
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="RowBackground" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="AlternatingRowBackground" Value="{DynamicResource SurfaceAltBrush}"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource BorderBrush}"/>
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        </Style>
+
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
         </Style>
     </Application.Resources>
 </Application>
