@@ -60,7 +60,7 @@ public partial class MainWindow : Window
 
         BeginActivity("Inicializando", "Leyendo servicios, inicio y métricas del sistema…");
 
-        AdminText.Text = $"Administrador: {(IsAdministrator() ? "Sí" : "No")}";
+        AdminText.Text = $"Permisos de administrador: {(IsAdministrator() ? "Sí" : "No")}";
         RefreshBackupStatus();
         RefreshStartup();
         await RefreshServicesAsync();
@@ -140,8 +140,8 @@ public partial class MainWindow : Window
     private void RefreshBackupStatus()
     {
         BackupText.Text = _backup.Exists
-            ? $"Backup: {_backup.FilePath}"
-            : "Backup: aún no creado";
+            ? "Copia de seguridad: disponible"
+            : "Copia de seguridad: aún no creada";
     }
 
     private async void OptimizeSafe_Click(object sender, RoutedEventArgs e)
@@ -362,8 +362,8 @@ public partial class MainWindow : Window
 
             VirtualizationBootModeText.Text =
                 state.HypervisorLaunchType.Equals("Off", StringComparison.OrdinalIgnoreCase)
-                    ? "VMware directo · OFF"
-                    : "Normal · AUTO";
+                    ? "Modo VMware"
+                    : "Modo normal";
 
             VirtualizationCurrentText.Text =
                 state.HypervisorPresentNow
@@ -656,7 +656,7 @@ public partial class MainWindow : Window
 
             var source = result.FromCache ? "caché local" : "GitHub oficial";
             WinUtilStatusText.Text =
-                $"WinUtil {result.Version} · {result.Tweaks.Count} tweaks · {source}";
+                $"WinUtil {result.Version} · {result.Tweaks.Count} opciones · {source}";
 
             Log(
                 $"WinUtil catálogo cargado: {result.Version}, commit {result.Commit[..12]}, " +
@@ -668,7 +668,7 @@ public partial class MainWindow : Window
                 ActivityKind.Success);
 
             ShowToast(
-                $"WinUtil: {result.Tweaks.Count} tweaks cargados sin ejecutar código.",
+                $"WinUtil: {result.Tweaks.Count} opciones cargadas sin realizar cambios.",
                 ActivityKind.Success);
         }
         catch (Exception ex)
