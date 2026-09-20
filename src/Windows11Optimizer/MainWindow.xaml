@@ -357,27 +357,64 @@
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
-                        <TextBlock DockPanel.Dock="Left"
-                                   VerticalAlignment="Center"
+
+                    <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                        <TextBlock FontWeight="SemiBold"
+                                   Text="Programas que se abren con Windows"/>
+                        <TextBlock Margin="0,3,0,5"
                                    TextWrapping="Wrap"
-                                   Text="Aquí puedes ver los programas que intentan abrirse al encender Windows. Desactivar los que no necesitas puede reducir el uso de memoria y acelerar el inicio."/>
-                        <Button DockPanel.Dock="Right"
-                                Content="Administrar programas de inicio"
-                                Click="OpenStartupSettings_Click"/>
-                    </DockPanel>
-                    <DataGrid Grid.Row="1"
+                                   Foreground="{DynamicResource MutedForegroundBrush}"
+                                   Text="La app intenta comprobar si el programa de cada entrada todavía existe. Si una aplicación fue desinstalada pero dejó una referencia antigua, aparecerá como entrada huérfana."/>
+                        <WrapPanel>
+                            <Button Content="Actualizar lista"
+                                    Click="RefreshStartup_Click"/>
+                            <Button Content="Administrar en Windows"
+                                    Click="OpenStartupSettings_Click"/>
+                            <Button Content="Quitar entrada huérfana"
+                                    Click="RemoveOrphanedStartup_Click"
+                                    ToolTip="Solo elimina la referencia de inicio seleccionada cuando el archivo del programa ya no existe."/>
+                            <Button x:Name="RestoreStartupEntryButton"
+                                    Content="Restaurar última entrada"
+                                    Click="RestoreStartupEntry_Click"
+                                    IsEnabled="False"/>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <Border Grid.Row="1"
+                            Padding="9"
+                            Margin="0,0,0,8"
+                            CornerRadius="7"
+                            Background="{DynamicResource SurfaceAltBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1">
+                        <TextBlock x:Name="StartupSummaryText"
+                                   Text="Analizando programas de inicio…"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+
+                    <DataGrid Grid.Row="2"
                               x:Name="StartupGrid"
                               AutoGenerateColumns="False"
                               IsReadOnly="True"
                               CanUserAddRows="False"
+                              SelectionMode="Single"
                               AlternationCount="2">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Nombre" Binding="{Binding Name}" Width="220"/>
-                            <DataGridTextColumn Header="Origen" Binding="{Binding Source}" Width="180"/>
-                            <DataGridTextColumn Header="Comando" Binding="{Binding Command}" Width="*"/>
+                            <DataGridTextColumn Header="Nombre"
+                                                Binding="{Binding Name}"
+                                                Width="210"/>
+                            <DataGridTextColumn Header="Estado"
+                                                Binding="{Binding StatusDisplay}"
+                                                Width="220"/>
+                            <DataGridTextColumn Header="Origen"
+                                                Binding="{Binding Source}"
+                                                Width="190"/>
+                            <DataGridTextColumn Header="Programa detectado"
+                                                Binding="{Binding TargetDisplay}"
+                                                Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
