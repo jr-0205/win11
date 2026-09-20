@@ -7,13 +7,17 @@ namespace Windows11Optimizer.Services;
 
 public sealed class InstalledAppService
 {
+    private const string UninstallRegistryPath =
+        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+
     public IReadOnlyList<InstalledApp> GetInstalledApps()
     {
         var apps = new List<InstalledApp>();
 
         ReadHive(apps, RegistryHive.LocalMachine, RegistryView.Registry64, "HKLM64");
         ReadHive(apps, RegistryHive.LocalMachine, RegistryView.Registry32, "HKLM32");
-        ReadHive(apps, RegistryHive.CurrentUser, RegistryView.Registry64, "HKCU");
+        ReadHive(apps, RegistryHive.CurrentUser, RegistryView.Registry64, "HKCU64");
+        ReadHive(apps, RegistryHive.CurrentUser, RegistryView.Registry32, "HKCU32");
 
         return apps
             .GroupBy(
@@ -27,15 +31,17 @@ public sealed class InstalledAppService
     public void StartUninstall(InstalledApp app)
     {
         if (!app.CanUninstall)
+        {
             throw new InvalidOperationException(
                 "Esta aplicación no publica un desinstalador seguro que podamos iniciar.");
+        }
 
         var uninstall = Environment.ExpandEnvironmentVariables(
             app.UninstallString.Trim());
 
         var productCode = Regex.Match(
             uninstall,
-            @"{[0-9A-Fa-f-]{36}}");
+            @"\{[0-9A-Fa-f\-]{36}\}");
 
         if (app.WindowsInstaller && productCode.Success)
         {
@@ -100,7 +106,7 @@ public sealed class InstalledAppService
         {
             using var baseKey = RegistryKey.OpenBaseKey(hive, view);
             using var uninstall = baseKey.OpenSubKey(
-                @"SOFTWAREMicrosoftWindowsCurrentVersionUninstall",
+                UninstallRegistryPath,
                 writable: false);
 
             if (uninstall is null)
@@ -114,7 +120,9 @@ public sealed class InstalledAppService
                     if (key is null)
                         continue;
 
-                    var displayName = Convert.ToString(key.GetValue("DisplayName")) ?? "";
+                    var displayName =
+                        Convert.ToString(key.GetValue("DisplayName")) ?? "";
+
                     if (string.IsNullOrWhiteSpace(displayName))
                         continue;
 
@@ -147,7 +155,7 @@ public sealed class InstalledAppService
                             Convert.ToString(key.GetValue("QuietUninstallString")) ?? "",
                         RegistryHive = hiveLabel,
                         RegistryPath =
-                            $@"SOFTWAREMicrosoftWindowsCurrentVersionUninstall{subKeyName}",
+                            $@"{UninstallRegistryPath}\{subKeyName}",
                         IsSystemComponent = systemComponent,
                         WindowsInstaller =
                             Convert.ToInt32(key.GetValue("WindowsInstaller", 0)) == 1
@@ -189,7 +197,7 @@ public sealed class InstalledAppService
 
         var match = Regex.Match(
             command,
-            @"^(?<exe>.+?.exe)(?:s+(?<args>.*))?$",
+            @"^(?<exe>.+?\.exe)(?:\s+(?<args>.*))?$",
             RegexOptions.IgnoreCase);
 
         if (!match.Success)
