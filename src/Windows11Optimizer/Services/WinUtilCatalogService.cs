@@ -153,18 +153,28 @@ public sealed class WinUtilCatalogService
                 CountArray(obj, "ScheduledTask") +
                 CountArray(obj, "task");
 
-            var presets = presetMembership.TryGetValue(property.Name, out var names)
-                ? string.Join(", ", names.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
-                : "";
+            var presetNames = presetMembership.TryGetValue(property.Name, out var names)
+                ? names
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var translatedTitle = WinUtilSpanishTranslator.Title(
+                property.Name,
+                content);
 
             rows.Add(new WinUtilTweak
             {
                 Id = property.Name,
-                Content = string.IsNullOrWhiteSpace(content) ? property.Name : content,
-                Description = description,
-                Category = category,
+                Content = translatedTitle,
+                Description = WinUtilSpanishTranslator.Description(
+                    property.Name,
+                    description,
+                    translatedTitle),
+                Category = WinUtilSpanishTranslator.Category(category),
                 Panel = panel,
-                Presets = presets,
+                Presets = WinUtilSpanishTranslator.PresetList(presetNames),
+                OriginalContent = content,
+                OriginalDescription = description,
+                OriginalCategory = category,
                 RegistryActions = registryCount,
                 ServiceActions = serviceCount,
                 ScriptActions = scriptCount,
