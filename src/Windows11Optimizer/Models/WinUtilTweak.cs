@@ -7,6 +7,11 @@ public sealed class WinUtilTweak
     public string Description { get; init; } = "";
     public string Category { get; init; } = "";
     public string Panel { get; init; } = "";
+
+    // Datos originales de WinUtil conservados para auditoría/diagnóstico.
+    public string OriginalContent { get; init; } = "";
+    public string OriginalDescription { get; init; } = "";
+    public string OriginalCategory { get; init; } = "";
     public string Risk { get; init; } = "Revisión";
     public string Presets { get; init; } = "";
     public int RegistryActions { get; init; }
@@ -15,7 +20,7 @@ public sealed class WinUtilTweak
     public int ScheduledTaskActions { get; init; }
 
     public string Actions =>
-        $"Reg:{RegistryActions} · Svc:{ServiceActions} · Script:{ScriptActions} · Task:{ScheduledTaskActions}";
+        $"Registro: {RegistryActions} · Servicios: {ServiceActions} · Scripts: {ScriptActions} · Tareas: {ScheduledTaskActions}";
 }
 
 public sealed class WinUtilCatalogResult
