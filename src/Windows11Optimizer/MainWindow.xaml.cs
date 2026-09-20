@@ -57,6 +57,7 @@ public partial class MainWindow : Window
         _suppressThemeEvent = true;
         DarkModeToggle.IsChecked = _theme.IsDark;
         _suppressThemeEvent = false;
+        ApplyResponsiveLayout();
 
         BeginActivity("Inicializando", "Leyendo servicios, inicio y métricas del sistema…");
 
@@ -80,6 +81,23 @@ public partial class MainWindow : Window
         ShowToast(
             $"Windows 11 Optimizer listo · Tema {(_theme.IsDark ? "oscuro" : "claro")}",
             ActivityKind.Success);
+    }
+
+    private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        ApplyResponsiveLayout();
+    }
+
+    private void ApplyResponsiveLayout()
+    {
+        if (!IsInitialized)
+            return;
+
+        var compact = ActualWidth < 940;
+
+        MetricsGrid.Columns = compact ? 2 : 4;
+        VirtualizationStatusGrid.Columns = compact ? 2 : 4;
+        ActivityProgress.Width = compact ? 120 : 180;
     }
 
     private async Task RefreshMetricsAsync()
