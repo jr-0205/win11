@@ -25,14 +25,20 @@ internal static class Program
 
         using var context = new AgentApplicationContext();
 
-        if (args.Any(x => x.Equals("--focus", StringComparison.OrdinalIgnoreCase)))
+        var shouldOpenUi = args.Any(x =>
+            x.Equals("--focus", StringComparison.OrdinalIgnoreCase) ||
+            x.Equals("--settings", StringComparison.OrdinalIgnoreCase));
+
+        if (shouldOpenUi)
         {
-            // La propia instancia registrará el hotkey; el usuario puede usarlo
-            // inmediatamente. El panel se abre mediante una segunda señal.
+            // En la primera instancia esperamos a que los eventos nombrados
+            // estén creados y luego usamos el mismo camino que una segunda instancia.
+            var startupArgs = args.ToArray();
+
             Task.Run(async () =>
             {
                 await Task.Delay(250);
-                AgentApplicationContext.SignalExistingInstance(["--focus"]);
+                AgentApplicationContext.SignalExistingInstance(startupArgs);
             });
         }
 
