@@ -6,7 +6,7 @@ La prioridad del proyecto es la reversibilidad: antes de modificar servicios adm
 
 ## Estado
 
-**v0.3**
+**v0.4**
 
 ### Incluido
 
@@ -31,7 +31,7 @@ La prioridad del proyecto es la reversibilidad: antes de modificar servicios adm
 - Exportación de diagnóstico a TXT.
 - Registro de operaciones dentro de la aplicación.
 - Catálogo de referencia de Chris Titus Tech WinUtil.
-- Generador de EXE portable e instalador.\n- Administrador seguro de servicios por allowlist (Manual/Automático/Iniciar/Detener).\n- Selector reversible del hipervisor de Windows para alternar entre modo Normal (AUTO) y modo VMware directo (OFF), con backup y reinicio controlado.
+- Generador de EXE portable e instalador.\n- Administrador seguro de servicios por allowlist (Manual/Automático/Iniciar/Detener).\n- Selector reversible del modo de virtualización para alternar entre modo normal y modo VMware, con copia de seguridad y reinicio controlado.\n- Interfaz simplificada para usuarios no técnicos.\n- Las 66 opciones del catálogo fijado de WinUtil se muestran en español con explicaciones sencillas.
 
 ## Integración con WinUtil
 
