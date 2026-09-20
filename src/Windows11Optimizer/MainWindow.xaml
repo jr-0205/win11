@@ -570,11 +570,14 @@
                                     Click="RefreshStartup_Click"/>
                             <Button Content="Administrar en Windows"
                                     Click="OpenStartupSettings_Click"/>
+                            <Button Content="No iniciar con Windows"
+                                    Click="DisableStartupEntry_Click"
+                                    ToolTip="Retira de forma reversible la entrada seleccionada del inicio. No desinstala ni borra el programa."/>
                             <Button Content="Quitar entrada huérfana"
                                     Click="RemoveOrphanedStartup_Click"
                                     ToolTip="Solo elimina la referencia de inicio seleccionada cuando el archivo del programa ya no existe."/>
                             <Button x:Name="RestoreStartupEntryButton"
-                                    Content="Restaurar última entrada"
+                                    Content="Restaurar último cambio"
                                     Click="RestoreStartupEntry_Click"
                                     IsEnabled="False"/>
                         </WrapPanel>
