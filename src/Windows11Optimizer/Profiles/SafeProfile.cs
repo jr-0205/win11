@@ -31,4 +31,16 @@ public static class SafeProfile
 
     public static IEnumerable<string> AllModifiedServices =>
         VmwareServices.Concat(AcerOnDemandServices).Distinct(StringComparer.OrdinalIgnoreCase);
+
+    public static IEnumerable<string> UserManageableServices => AllModifiedServices;
+
+    public static bool IsUserManageableService(string name) =>
+        UserManageableServices.Contains(name, StringComparer.OrdinalIgnoreCase);
+
+    public static bool IsProtectedService(string name) =>
+        AcerProtectedServices.Contains(name, StringComparer.OrdinalIgnoreCase);
+
+    // Solo los servicios bajo demanda aprobados pueden quedar Disabled.
+    public static bool CanDisableService(string name) =>
+        IsUserManageableService(name);
 }
