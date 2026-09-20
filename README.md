@@ -6,7 +6,7 @@ La prioridad del proyecto es la reversibilidad: antes de modificar servicios adm
 
 ## Estado
 
-**v0.4**
+**v0.5**
 
 ### Incluido
 
@@ -218,3 +218,30 @@ Los datos de WinUtil importados son referencia; el nivel mostrado por la interfa
 Windows11Optimizer: MIT.
 
 WinUtil: MIT, Copyright (c) 2022 CT Tech Group LLC. Consulta `THIRD-PARTY-NOTICES.md`.
+
+
+## Análisis inteligente y Autoruns
+
+Windows11Optimizer v0.5 añade medición antes/después de la optimización y una integración opcional con Microsoft Sysinternals Autoruns/Autorunsc.
+
+- La app funciona aunque Autoruns no esté instalado.
+- Si `Autorunsc64.exe` o `Autorunsc.exe` está disponible, puede analizar ubicaciones de autoarranque adicionales.
+- Autoruns no se distribuye dentro del instalador de Windows11Optimizer.
+- El botón **Obtener Autoruns** abre la página oficial de Microsoft Sysinternals.
+- Autorunsc se usa únicamente para lectura/análisis; Windows11Optimizer no le delega cambios del sistema.
+
+## WinUtil simplificado
+
+La vista de WinUtil muestra primero opciones que Windows11Optimizer ha portado de forma nativa y reversible.
+
+Opciones aplicables en v0.5:
+
+- Mostrar extensiones de archivo.
+- Mostrar archivos ocultos.
+- Habilitar “Finalizar tarea” desde la barra de tareas.
+- Mostrar el acceso de búsqueda de la barra de tareas.
+- Activar el tema oscuro de Windows.
+
+Antes de aplicar cada ajuste se guarda el valor actual. El botón **Deshacer** restaura ese valor.
+
+Las demás opciones del catálogo fijado siguen disponibles mediante **Mostrar opciones avanzadas y de consulta**, pero no ejecutan scripts remotos ni `irm | iex`.
