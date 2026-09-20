@@ -305,3 +305,26 @@ Los servicios VMware se administran internamente; ya no existe una pantalla sepa
 La antigua vista completa de WinUtil dejó de mostrarse al usuario.
 
 La pantalla **Ajustes** enseña únicamente opciones que Windows11Optimizer ha portado de forma nativa, reversible y comprensible.
+
+
+## Corrección WSL / Docker v0.7.1
+
+El modo **Windows y Docker** ahora comprueba y repara servicios conocidos que pueden provocar `Wsl/0x80070422` cuando quedaron deshabilitados.
+
+La aplicación reconoce, si están instalados:
+
+- `WslService`
+- `LxssManager` en instalaciones WSL antiguas
+- `vmcompute`
+- `hns`
+- `HvHost`
+- `vmms`
+- `CmService`
+
+La reparación es conservadora:
+
+- solo cambia `Disabled -> Manual`;
+- conserva modos válidos existentes;
+- intenta iniciar WSL, Host Compute y Host Network cuando puede;
+- no deshabilita estos servicios desde la optimización inteligente;
+- no muestra “Listo” si siguen deshabilitados.
