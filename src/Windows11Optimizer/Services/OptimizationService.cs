@@ -44,8 +44,83 @@ public sealed class OptimizationService
         }
     }
 
-    public Task StartVmwareAsync(Action<string> log) => StartGroupAsync(SafeProfile.VmwareServices, log);
-    public Task StopVmwareAsync(Action<string> log) => StopGroupAsync(SafeProfile.VmwareServices, log);
+    public Task StartVmwareAsync(Action<string> log) =>
+        PrepareVmwareAsync(enableUsb: false, enableAutostart: false, log);
+
+    public Task StopVmwareAsync(Action<string> log) =>
+        StopGroupAsync(SafeProfile.VmwareServices, log);
+
+    public async Task PrepareVmwareAsync(
+        bool enableUsb,
+        bool enableAutostart,
+        Action<string> log)
+    {
+        await CreateBackupIfNeededAsync(log);
+
+        foreach (var name in SafeProfile.VmwareCoreServices)
+        {
+            try
+            {
+                if (_services.GetInfo(name, "", "") is null)
+                {
+                    log($"VMware no instalado: {name}");
+                    continue;
+                }
+
+                await _services.SetManualAndStartAsync(name);
+                log($"VMware preparado bajo demanda: {name}");
+            }
+            catch (Exception ex)
+            {
+                log($"Error preparando {name}: {ex.Message}");
+            }
+        }
+
+        if (enableUsb)
+        {
+            foreach (var name in SafeProfile.VmwareUsbServices)
+            {
+                try
+                {
+                    if (_services.GetInfo(name, "", "") is null)
+                    {
+                        log($"VMware USB no instalado: {name}");
+                        continue;
+                    }
+
+                    await _services.SetManualAndStartAsync(name);
+                    log($"Soporte USB VMware activado bajo demanda: {name}");
+                }
+                catch (Exception ex)
+                {
+                    log($"Error preparando USB VMware {name}: {ex.Message}");
+                }
+            }
+        }
+
+        if (enableAutostart)
+        {
+            foreach (var name in SafeProfile.VmwareAutostartServices)
+            {
+                try
+                {
+                    if (_services.GetInfo(name, "", "") is null)
+                    {
+                        log($"Autoinicio VMware no instalado: {name}");
+                        continue;
+                    }
+
+                    await _services.SetStartupAutomaticAsync(name);
+                    await _services.StartAsync(name);
+                    log($"Autoinicio de VMs habilitado: {name}");
+                }
+                catch (Exception ex)
+                {
+                    log($"Error preparando autoinicio VMware {name}: {ex.Message}");
+                }
+            }
+        }
+    }
     public Task StartAcerAsync(Action<string> log) => StartGroupAsync(SafeProfile.AcerOnDemandServices, log);
     public Task StopAcerAsync(Action<string> log) => StopGroupAsync(SafeProfile.AcerOnDemandServices, log);
 
@@ -150,35 +225,68 @@ public sealed class OptimizationService
 
     private async Task CreateBackupIfNeededAsync(Action<string> log)
     {
-        if (_backup.Exists)
-        {
-            log($"Backup existente: {_backup.FilePath}");
-            return;
-        }
+        var state = await _backup.LoadAsync()
+            ?? new BackupState { CreatedAt = DateTime.Now };
 
-        var state = new BackupState { CreatedAt = DateTime.Now };
+        var changed = !_backup.Exists;
 
         foreach (var name in SafeProfile.AllModifiedServices)
         {
+            if (state.Services.Any(
+                    x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
             var info = _services.GetInfo(name, "Backup", "");
-            if (info is null) continue;
+            if (info is null)
+                continue;
+
             state.Services.Add(new ServiceBackup
             {
                 Name = name,
                 StartMode = info.StartMode,
-                WasRunning = string.Equals(info.State, "Running", StringComparison.OrdinalIgnoreCase)
+                WasRunning = string.Equals(
+                    info.State,
+                    "Running",
+                    StringComparison.OrdinalIgnoreCase)
             });
+
+            changed = true;
+            log($"Backup ampliado para servicio: {name}");
         }
 
         foreach (var task in SafeProfile.AcerManagedTasks)
         {
+            if (state.Tasks.Any(
+                    x => x.TaskName.Equals(task, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
             var enabled = await _tasks.IsEnabledAsync(task);
-            if (enabled is not null)
-                state.Tasks.Add(new TaskBackup { TaskName = task, WasEnabled = enabled.Value });
+            if (enabled is null)
+                continue;
+
+            state.Tasks.Add(new TaskBackup
+            {
+                TaskName = task,
+                WasEnabled = enabled.Value
+            });
+
+            changed = true;
+            log($"Backup ampliado para tarea: {task}");
         }
 
-        await _backup.SaveIfMissingAsync(state);
-        log($"Backup creado: {_backup.FilePath}");
+        if (changed)
+        {
+            await _backup.SaveAsync(state);
+            log($"Backup actualizado: {_backup.FilePath}");
+        }
+        else
+        {
+            log($"Backup existente: {_backup.FilePath}");
+        }
     }
 
     private async Task StartGroupAsync(IEnumerable<string> names, Action<string> log)
