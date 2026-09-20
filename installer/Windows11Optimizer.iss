@@ -1,6 +1,6 @@
 #define MyAppName "Windows 11 Optimizer"
 #define MyAppExeName "Windows11Optimizer.exe"
-#define MyAppVersion "0.6.0"
+#define MyAppVersion "0.7.0"
 #define MyAppPublisher "jr-0205"
 
 [Setup]
