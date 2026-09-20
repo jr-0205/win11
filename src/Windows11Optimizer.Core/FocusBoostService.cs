@@ -10,7 +10,8 @@ public sealed class FocusBoostService : IDisposable
         {
             "Idle", "System", "Registry", "smss", "csrss", "wininit",
             "services", "lsass", "winlogon", "svchost", "dwm", "fontdrvhost",
-            "audiodg", "Memory Compression", "Secure System"
+            "audiodg", "Memory Compression", "Secure System",
+            "Windows11Optimizer", "Windows11Optimizer.Agent"
         };
 
     private static readonly HashSet<string> BackgroundDeprioritizeAllowlist =
@@ -110,8 +111,12 @@ public sealed class FocusBoostService : IDisposable
         lock (_gate)
         {
             var existing = LoadSession();
+
             if (existing is not null &&
-                IsSameProcess(existing.TargetPid, existing.TargetStartTimeUtc, existing.TargetName))
+                IsSameProcess(
+                    existing.TargetPid,
+                    existing.TargetStartTimeUtc,
+                    existing.TargetName))
             {
                 throw new InvalidOperationException(
                     $"Focus Boost ya está activo para {existing.TargetName}.");
@@ -131,6 +136,7 @@ public sealed class FocusBoostService : IDisposable
             }
 
             var originalPriority = target.PriorityClass;
+
             var session = new FocusBoostSession
             {
                 StartedAt = DateTime.Now,
@@ -140,60 +146,83 @@ public sealed class FocusBoostService : IDisposable
                 TargetOriginalPriority = originalPriority.ToString()
             };
 
-            if (originalPriority is ProcessPriorityClass.Idle or
-                ProcessPriorityClass.BelowNormal or
-                ProcessPriorityClass.Normal)
-            {
-                target.PriorityClass = ProcessPriorityClass.AboveNormal;
-                session.TargetPriorityChanged = true;
-            }
+            // Persiste la identidad y el estado original antes de tocar nada.
+            SaveSession(session);
 
-            foreach (var name in BackgroundDeprioritizeAllowlist)
+            try
             {
-                foreach (var background in Process.GetProcessesByName(name))
+                if (originalPriority is ProcessPriorityClass.Idle or
+                    ProcessPriorityClass.BelowNormal or
+                    ProcessPriorityClass.Normal)
                 {
-                    using (background)
+                    // Marcar antes del cambio hace que incluso un fallo posterior
+                    // pueda restaurar de forma conservadora el valor original.
+                    session.TargetPriorityChanged = true;
+                    SaveSession(session);
+                    target.PriorityClass = ProcessPriorityClass.AboveNormal;
+                }
+
+                foreach (var name in BackgroundDeprioritizeAllowlist)
+                {
+                    foreach (var background in Process.GetProcessesByName(name))
                     {
-                        try
+                        using (background)
                         {
-                            if (background.Id == target.Id)
-                                continue;
-
-                            var original = background.PriorityClass;
-                            if (original is not ProcessPriorityClass.Normal and
-                                not ProcessPriorityClass.AboveNormal)
+                            try
                             {
-                                continue;
+                                if (background.Id == target.Id)
+                                    continue;
+
+                                var original = background.PriorityClass;
+
+                                if (original is not ProcessPriorityClass.Normal and
+                                    not ProcessPriorityClass.AboveNormal)
+                                {
+                                    continue;
+                                }
+
+                                var change = new FocusPriorityChange
+                                {
+                                    Pid = background.Id,
+                                    ProcessName = background.ProcessName,
+                                    StartTimeUtc =
+                                        background.StartTime.ToUniversalTime(),
+                                    OriginalPriority = original.ToString()
+                                };
+
+                                session.BackgroundChanges.Add(change);
+
+                                // Guardar antes de aplicar: si la app o el sistema
+                                // se interrumpen, el agente sabe qué restaurar.
+                                SaveSession(session);
+
+                                background.PriorityClass =
+                                    ProcessPriorityClass.BelowNormal;
                             }
-
-                            session.BackgroundChanges.Add(new FocusPriorityChange
+                            catch
                             {
-                                Pid = background.Id,
-                                ProcessName = background.ProcessName,
-                                StartTimeUtc = background.StartTime.ToUniversalTime(),
-                                OriginalPriority = original.ToString()
-                            });
-
-                            background.PriorityClass = ProcessPriorityClass.BelowNormal;
-                        }
-                        catch
-                        {
-                            // No se fuerza acceso a procesos que no lo permiten.
+                                // No se fuerza acceso a procesos que no lo permiten.
+                            }
                         }
                     }
                 }
+
+                SaveSession(session);
+                AttachWatcher(session);
+
+                return new FocusBoostStatus
+                {
+                    IsActive = true,
+                    TargetName = session.TargetName,
+                    TargetPid = session.TargetPid,
+                    StartedAt = session.StartedAt
+                };
             }
-
-            SaveSession(session);
-            AttachWatcher(session);
-
-            return new FocusBoostStatus
+            catch
             {
-                IsActive = true,
-                TargetName = session.TargetName,
-                TargetPid = session.TargetPid,
-                StartedAt = session.StartedAt
-            };
+                RestoreInternal(session);
+                throw;
+            }
         }
     }
 
