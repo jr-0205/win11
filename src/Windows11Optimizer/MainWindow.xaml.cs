@@ -106,7 +106,7 @@ public partial class MainWindow : Window
         var compact = ActualWidth < 940;
 
         MetricsGrid.Columns = compact ? 2 : 4;
-        VirtualizationStatusGrid.Columns = compact ? 2 : 4;
+        VirtualizationStatusGrid.Columns = compact ? 2 : 3;
         ActivityProgress.Width = compact ? 120 : 180;
     }
 
@@ -850,6 +850,8 @@ public partial class MainWindow : Window
 
             VirtualizationBootModeText.Text = state.ConfiguredModeLabel;
             VirtualizationCurrentText.Text = state.CurrentHypervisorLabel;
+            VirtualizationVbsText.Text = state.VbsLabel;
+            VirtualizationMemoryIntegrityText.Text = state.MemoryIntegrityLabel;
             VirtualizationRestartText.Text = state.RestartLabel;
 
             VirtualizationBackupText.Text =
@@ -859,7 +861,15 @@ public partial class MainWindow : Window
 
             RestartForVirtualizationButton.IsEnabled = state.PendingRestart;
             UseNormalVirtualizationButton.IsEnabled = !state.IsConfiguredForNormal;
-            UseVmwareVirtualizationButton.IsEnabled = !state.IsConfiguredForVmware;
+
+            // Aunque el BCD ya esté en modo VMware, el botón sigue disponible
+            // porque también prepara los servicios VMware seleccionados.
+            UseVmwareVirtualizationButton.IsEnabled = true;
+            UseVmwareVirtualizationButton.Content = state.IsConfiguredForVmware
+                ? "Preparar servicios VMware"
+                : "Preparar para VMware";
+
+            RefreshVmwareServiceProfile();
 
             if (state.PendingRestart)
             {
@@ -873,8 +883,9 @@ public partial class MainWindow : Window
             else if (state.IsConfiguredForVmware && !state.HypervisorPresentNow)
             {
                 VirtualizationHelpText.Text =
-                    "El equipo ya está preparado para VMware y el hipervisor de Windows no está activo. " +
-                    "No necesitas reiniciar.";
+                    "Modo VMware activo: el hipervisor de Windows no está en ejecución. " +
+                    "Las políticas de VBS e Integridad de memoria no se eliminaron, pero las funciones que dependan " +
+                    "del hipervisor no estarán activas durante este arranque.";
 
                 VirtualizationRestartHintText.Text =
                     "Modo VMware ya activo para esta sesión. No necesitas reiniciar.";
@@ -882,8 +893,8 @@ public partial class MainWindow : Window
             else if (state.IsConfiguredForNormal && state.HypervisorPresentNow)
             {
                 VirtualizationHelpText.Text =
-                    "El equipo ya está en modo normal y el hipervisor de Windows está activo. " +
-                    "No necesitas reiniciar.";
+                    "Modo normal activo: el hipervisor de Windows está disponible para Docker/WSL2, Hyper-V " +
+                    "y funciones de seguridad basadas en virtualización.";
 
                 VirtualizationRestartHintText.Text =
                     "Modo normal ya activo. No necesitas reiniciar.";
@@ -891,8 +902,8 @@ public partial class MainWindow : Window
             else
             {
                 VirtualizationHelpText.Text =
-                    "El modo normal está configurado. El hipervisor de Windows no está activo en esta sesión; " +
-                    "esto puede ser normal si ninguna función de Windows lo está usando. No se recomienda reiniciar solo por este estado.";
+                    "El modo normal está configurado, pero el hipervisor no aparece activo en esta sesión. " +
+                    "Puede ser normal si ninguna función lo está usando; no recomendamos reiniciar solo por este estado.";
 
                 VirtualizationRestartHintText.Text =
                     "No hay un cambio pendiente creado por la app.";
@@ -902,6 +913,8 @@ public partial class MainWindow : Window
         {
             VirtualizationBootModeText.Text = "No disponible";
             VirtualizationCurrentText.Text = "No disponible";
+            VirtualizationVbsText.Text = "No disponible";
+            VirtualizationMemoryIntegrityText.Text = "No disponible";
             VirtualizationRestartText.Text = "No disponible";
             VirtualizationBackupText.Text =
                 _virtualization.BackupExists ? "Disponible" : "Aún no creada";
@@ -913,8 +926,60 @@ public partial class MainWindow : Window
             UseNormalVirtualizationButton.IsEnabled = true;
             UseVmwareVirtualizationButton.IsEnabled = true;
 
+            RefreshVmwareServiceProfile();
             Log($"Error leyendo virtualización: {ex.Message}");
         }
+    }
+
+    private void RefreshVmwareServiceProfile()
+    {
+        var coreInstalled = 0;
+        var coreRunning = 0;
+
+        foreach (var name in SafeProfile.VmwareCoreServices)
+        {
+            var info = _serviceManager.GetInfo(name, "", "");
+            if (info is null)
+                continue;
+
+            coreInstalled++;
+
+            if (string.Equals(
+                    info.State,
+                    "Running",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                coreRunning++;
+            }
+        }
+
+        var usb = GetVmwareOptionalServiceState(
+            SafeProfile.VmwareUsbServices.FirstOrDefault());
+
+        var autostart = GetVmwareOptionalServiceState(
+            SafeProfile.VmwareAutostartServices.FirstOrDefault());
+
+        VmwareServiceProfileText.Text =
+            $"Servicios principales: {coreRunning}/{coreInstalled} en ejecución. " +
+            $"USB: {usb}. Autoinicio: {autostart}.";
+    }
+
+    private string GetVmwareOptionalServiceState(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "no configurado";
+
+        var info = _serviceManager.GetInfo(name, "", "");
+
+        if (info is null)
+            return "no instalado";
+
+        return string.Equals(
+                info.State,
+                "Running",
+                StringComparison.OrdinalIgnoreCase)
+            ? "activo"
+            : info.StartModeDisplay;
     }
 
     private async void SetVirtualizationNormal_Click(object sender, RoutedEventArgs e)
@@ -949,8 +1014,10 @@ public partial class MainWindow : Window
         }
 
         var answer = MessageBox.Show(
-            "Se preparará Windows para usar su modo normal de virtualización.\n\n" +
-            "La app comprobará después si realmente necesitas reiniciar. ¿Continuar?",
+            "Se preparará Windows para volver al modo normal.\n\n" +
+            "El hipervisor de Windows quedará disponible en el próximo arranque para Docker/WSL2, Hyper-V " +
+            "y funciones de seguridad basadas en virtualización. La app no cambia tus políticas de VBS o Integridad de memoria.\n\n" +
+            "¿Continuar?",
             "Usar modo normal",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
@@ -963,58 +1030,50 @@ public partial class MainWindow : Window
 
         await RunVirtualizationOperationAsync(
             "Preparando modo normal",
-            "Guardando el estado original y actualizando la configuración de arranque…",
+            "Conservando las políticas de seguridad y habilitando el arranque del hipervisor de Windows…",
             () => _virtualization.SetNormalAsync());
     }
 
     private async void SetVirtualizationVmware_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            var state = await _virtualization.GetStateAsync();
+        var enableUsb = VmwareUsbToggle.IsChecked == true;
+        var enableAutostart = VmwareAutostartToggle.IsChecked == true;
 
-            if (state.IsConfiguredForVmware)
-            {
-                await RefreshVirtualizationAsync();
-
-                if (state.PendingRestart)
-                {
-                    ShowToast(
-                        "El modo VMware ya está preparado. Reinicia solo si quieres aplicarlo ahora.",
-                        ActivityKind.Warning);
-                }
-                else
-                {
-                    ShowToast(
-                        "El equipo ya está preparado para VMware. No necesitas reiniciar.",
-                        ActivityKind.Success);
-                }
-
-                return;
-            }
-        }
-        catch (Exception ex)
-        {
-            Log($"No se pudo comprobar el modo actual: {ex.Message}");
-        }
+        var optionalSummary =
+            $"USB: {(enableUsb ? "sí" : "no")} · Autoinicio de VMs: {(enableAutostart ? "sí" : "no")}";
 
         var answer = MessageBox.Show(
-            "Se preparará Windows para usar VMware sin cargar el hipervisor de Windows.\n\n" +
-            "La app comprobará después si realmente necesitas reiniciar. ¿Continuar?",
+            "Se preparará VMware y se configurará Windows para que el hipervisor de Windows no arranque " +
+            "en el próximo inicio. Esto puede mejorar compatibilidad con VMware y virtualización anidada " +
+            "cuando Hyper-V/VBS interfieren.\n\n" +
+            "No se borrarán ni desactivarán permanentemente las políticas de VBS o Integridad de memoria. " +
+            "Mientras el hipervisor esté fuera de ejecución, las funciones que dependan de él no podrán estar activas.\n\n" +
+            $"Opciones: {optionalSummary}\n\n¿Continuar?",
             "Preparar para VMware",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
         if (answer != MessageBoxResult.Yes)
         {
-            ShowToast("Cambio de virtualización cancelado.", ActivityKind.Info);
+            ShowToast("Preparación de VMware cancelada.", ActivityKind.Info);
             return;
         }
 
         await RunVirtualizationOperationAsync(
             "Preparando modo VMware",
-            "Guardando el estado original y actualizando la configuración de arranque…",
-            () => _virtualization.SetVmwareDirectAsync());
+            "Preparando servicios VMware y configurando el próximo arranque sin el hipervisor de Windows…",
+            async () =>
+            {
+                await _optimizer.PrepareVmwareAsync(
+                    enableUsb,
+                    enableAutostart,
+                    Log);
+
+                return await _virtualization.SetVmwareDirectAsync();
+            });
+
+        await RefreshServicesAsync();
+        RefreshVmwareServiceProfile();
     }
 
     private async void RestoreVirtualization_Click(object sender, RoutedEventArgs e)
@@ -1028,7 +1087,8 @@ public partial class MainWindow : Window
         }
 
         var answer = MessageBox.Show(
-            "Se restaurará el modo de virtualización que existía antes del primer cambio realizado por la app.\n\n" +
+            "Se restaurará el valor de arranque del hipervisor que existía antes del primer cambio.\n\n" +
+            "Las políticas de VBS e Integridad de memoria nunca fueron eliminadas por esta función. " +
             "Después se comprobará automáticamente si hace falta reiniciar. ¿Continuar?",
             "Volver al estado original",
             MessageBoxButton.YesNo,
@@ -1039,7 +1099,7 @@ public partial class MainWindow : Window
 
         await RunVirtualizationOperationAsync(
             "Restaurando virtualización",
-            "Restaurando el valor original guardado…",
+            "Restaurando el valor original del arranque del hipervisor…",
             () => _virtualization.RestoreAsync());
     }
 
@@ -1047,7 +1107,7 @@ public partial class MainWindow : Window
     {
         BeginActivity(
             "Actualizando virtualización",
-            "Comprobando el modo configurado y el estado de esta sesión…");
+            "Comprobando hipervisor, VBS, Integridad de memoria y servicios VMware…");
 
         try
         {
@@ -1135,6 +1195,8 @@ public partial class MainWindow : Window
         {
             Log(title + "…");
             var requiresRestart = await operation();
+
+            await RefreshServicesAsync();
             await RefreshVirtualizationAsync();
 
             if (requiresRestart)
@@ -1198,6 +1260,7 @@ public partial class MainWindow : Window
             await operation();
             await RefreshServicesAsync();
             await RefreshMetricsAsync();
+            RefreshVmwareServiceProfile();
 
             var completed = title + ": completado";
             Log(completed + ".");
