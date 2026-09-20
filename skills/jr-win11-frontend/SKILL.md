@@ -1852,3 +1852,63 @@ La interfaz no debe mostrar **Listo** únicamente porque `hypervisorlaunchtype=a
 También debe considerar si los componentes necesarios quedaron deshabilitados.
 
 Nunca poner estos servicios en Disabled desde la optimización inteligente.
+
+
+### Contrato inmutable VMwareMode.ps1
+
+El cambio entre **Windows y Docker** y **VMware** conserva como fuente de verdad el comportamiento del script original `VMwareMode.ps1`.
+
+Regla exacta:
+
+- si `bcdedit /enum {current}` contiene `hypervisorlaunchtype off` -> modo VMware;
+- cualquier otro caso -> modo Windows/Normal;
+- Windows/Normal escribe únicamente `hypervisorlaunchtype auto`;
+- VMware escribe únicamente `hypervisorlaunchtype off`.
+
+Este núcleo no administra:
+
+- servicios;
+- tareas programadas;
+- WSL;
+- Docker;
+- VMware;
+- VBS;
+- Integridad de memoria.
+
+## Orden obligatorio
+
+Al cambiar de modo:
+
+1. aplicar primero el valor BCD `auto/off`;
+2. guardar el estado de reinicio;
+3. después ejecutar preparación secundaria;
+4. comprobar la preparación;
+5. informar por separado:
+   - modo base aplicado;
+   - preparación secundaria completa/incompleta.
+
+Un error al preparar servicios no puede:
+
+- impedir que se guarde el cambio BCD;
+- revertir el cambio BCD;
+- hacer que la UI diga que el cambio BCD falló si realmente se aplicó.
+
+## Windows y Docker
+
+Después de aplicar `auto`:
+
+- reparar únicamente servicios conocidos que estén en Disabled;
+- conservar cualquier modo válido existente;
+- no deshabilitar servicios de WSL/virtualización;
+- permitir que el reinicio termine de activar el hipervisor si hace falta.
+
+## VMware
+
+Después de aplicar `off`:
+
+- dejar componentes VMware disponibles;
+- preparar los componentes principales;
+- no modificar políticas de seguridad de Windows;
+- no mezclar la preparación VMware con la decisión BCD.
+
+Esta separación es una regla de arquitectura, no solo una decisión visual.
