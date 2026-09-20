@@ -749,6 +749,46 @@ public partial class MainWindow : Window
         return disabled;
     }
 
+    private IReadOnlyList<string> GetDisabledVmwareCoreServices()
+    {
+        var disabled = new List<string>();
+
+        foreach (var name in SafeProfile.VmwareCoreServices)
+        {
+            var info = _serviceManager.GetInfo(name, "", "");
+            if (info is null)
+                continue;
+
+            if (string.Equals(
+                    info.StartMode,
+                    "Disabled",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                disabled.Add(info.DisplayName);
+            }
+        }
+
+        return disabled;
+    }
+
+    private async Task RunSecondaryModePreparationAsync(
+        string modeName,
+        Func<Task> preparation)
+    {
+        try
+        {
+            await preparation();
+        }
+        catch (Exception ex)
+        {
+            // El núcleo del modo (auto/off) ya fue aplicado antes.
+            // Una preparación secundaria nunca debe deshacer ni ocultar ese cambio.
+            Log(
+                $"{modeName}: el modo base quedó configurado, " +
+                $"pero la preparación secundaria encontró un problema: {ex.Message}");
+        }
+    }
+
     private async Task RefreshVirtualizationAsync()
     {
         try
@@ -873,11 +913,19 @@ public partial class MainWindow : Window
     {
         await RunVirtualizationOperationAsync(
             "Preparando Windows y Docker",
-            "Dejando Docker y VMware disponibles cuando se necesiten y preparando la virtualización normal de Windows…",
+            "Aplicando primero el modo original de virtualización y después comprobando WSL/Docker…",
             async () =>
             {
-                await _optimizer.PrepareWindowsVirtualizationAsync(Log);
-                return await _virtualization.SetNormalAsync();
+                // Núcleo heredado de VMwareMode.ps1: primero BCD -> auto.
+                var requiresRestart =
+                    await _virtualization.SetNormalAsync();
+
+                // Capa secundaria: solo repara componentes conocidos si hace falta.
+                await RunSecondaryModePreparationAsync(
+                    "Windows y Docker",
+                    () => _optimizer.PrepareWindowsVirtualizationAsync(Log));
+
+                return requiresRestart;
             });
     }
 
@@ -898,11 +946,19 @@ public partial class MainWindow : Window
 
         await RunVirtualizationOperationAsync(
             "Preparando VMware",
-            "Preparando VMware y ajustando el próximo arranque…",
+            "Aplicando primero el modo original de VMware y después preparando sus componentes…",
             async () =>
             {
-                await _optimizer.PrepareVmwareAsync(Log);
-                return await _virtualization.SetVmwareDirectAsync();
+                // Núcleo heredado de VMwareMode.ps1: primero BCD -> off.
+                var requiresRestart =
+                    await _virtualization.SetVmwareDirectAsync();
+
+                // Capa secundaria: prepara VMware sin alterar el modo BCD.
+                await RunSecondaryModePreparationAsync(
+                    "VMware",
+                    () => _optimizer.PrepareVmwareAsync(Log));
+
+                return requiresRestart;
             });
     }
 
@@ -1033,26 +1089,27 @@ public partial class MainWindow : Window
             await RefreshVirtualizationAsync();
 
             var stateAfter = await _virtualization.GetStateAsync();
-            IReadOnlyList<string> disabledWindowsVirtualization =
+
+            IReadOnlyList<string> readinessIssues =
                 stateAfter.IsConfiguredForNormal
                     ? GetDisabledWindowsVirtualizationServices()
-                    : Array.Empty<string>();
+                    : GetDisabledVmwareCoreServices();
 
-            if (!requiresRestart &&
-                stateAfter.IsConfiguredForNormal &&
-                disabledWindowsVirtualization.Count > 0)
+            if (readinessIssues.Count > 0)
             {
                 var missingText = string.Join(
                     ", ",
-                    disabledWindowsVirtualization);
+                    readinessIssues);
 
                 EndActivity(
-                    title + ": requiere revisión",
-                    "Todavía hay componentes de WSL/virtualización deshabilitados: " + missingText,
+                    title + ": modo base aplicado",
+                    "El cambio de virtualización sí quedó guardado, pero todavía hay componentes que necesitan reparación: " + missingText,
                     ActivityKind.Warning);
 
                 ShowToast(
-                    "El modo de Windows está elegido, pero WSL todavía necesita reparación.",
+                    stateAfter.IsConfiguredForNormal
+                        ? "Modo Windows/Docker aplicado; WSL todavía necesita reparación."
+                        : "Modo VMware aplicado; algunos componentes VMware todavía necesitan reparación.",
                     ActivityKind.Warning);
 
                 return;
