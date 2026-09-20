@@ -15,6 +15,7 @@ public partial class MainWindow : Window
     private readonly ScheduledTaskManager _taskManager = new();
     private readonly BackupService _backup = new();
     private readonly StartupInventoryService _startup = new();
+    private readonly WinUtilCatalogService _winUtil = new();
     private readonly OptimizationService _optimizer;
     private readonly DiagnosticReportService _diagnostics;
     private readonly DispatcherTimer _timer;
@@ -43,6 +44,7 @@ public partial class MainWindow : Window
         await RefreshMetricsAsync();
         _timer.Start();
         Log("Aplicación iniciada. Perfil seguro cargado.");
+        Log($"WinUtil disponible como catálogo de solo lectura: {WinUtilCatalogService.Version} / {WinUtilCatalogService.Commit[..12]}.");
     }
 
     private async Task RefreshMetricsAsync()
@@ -125,7 +127,11 @@ public partial class MainWindow : Window
     {
         if (!_backup.Exists)
         {
-            MessageBox.Show("No existe una copia de seguridad creada por la aplicación.", "Restaurar", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(
+                "No existe una copia de seguridad creada por la aplicación.",
+                "Restaurar",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
             return;
         }
 
@@ -151,7 +157,8 @@ public partial class MainWindow : Window
     private async void StopAcer_Click(object sender, RoutedEventArgs e) =>
         await RunOperationAsync("Deteniendo utilidades Acer", () => _optimizer.StopAcerAsync(Log));
 
-    private async void RefreshServices_Click(object sender, RoutedEventArgs e) => await RefreshServicesAsync();
+    private async void RefreshServices_Click(object sender, RoutedEventArgs e) =>
+        await RefreshServicesAsync();
 
     private async Task RunOperationAsync(string title, Func<Task> operation)
     {
@@ -176,7 +183,11 @@ public partial class MainWindow : Window
         {
             var path = await _diagnostics.ExportToDesktopAsync();
             Log($"Diagnóstico exportado: {path}");
-            MessageBox.Show($"Reporte generado en:\n{path}", "Diagnóstico", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(
+                $"Reporte generado en:\n{path}",
+                "Diagnóstico",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
@@ -184,9 +195,55 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OpenStartupSettings_Click(object sender, RoutedEventArgs e) => OpenShell("ms-settings:startupapps");
-    private void OpenTaskManager_Click(object sender, RoutedEventArgs e) => OpenShell("taskmgr.exe");
-    private void OpenServices_Click(object sender, RoutedEventArgs e) => OpenShell("services.msc");
+    private async void LoadWinUtil_Click(object sender, RoutedEventArgs e) =>
+        await LoadWinUtilCatalogAsync(forceRefresh: false);
+
+    private async void RefreshWinUtil_Click(object sender, RoutedEventArgs e) =>
+        await LoadWinUtilCatalogAsync(forceRefresh: true);
+
+    private async Task LoadWinUtilCatalogAsync(bool forceRefresh)
+    {
+        try
+        {
+            WinUtilStatusText.Text = forceRefresh
+                ? "Actualizando catálogo fijado…"
+                : "Cargando catálogo fijado…";
+
+            var result = await _winUtil.LoadAsync(forceRefresh);
+            WinUtilGrid.ItemsSource = result.Tweaks;
+
+            var source = result.FromCache ? "caché local" : "GitHub oficial";
+            WinUtilStatusText.Text =
+                $"WinUtil {result.Version} · {result.Tweaks.Count} tweaks · {source}";
+
+            Log(
+                $"WinUtil catálogo cargado: {result.Version}, commit {result.Commit[..12]}, " +
+                $"{result.Tweaks.Count} tweaks, fuente={source}. Ningún tweak fue ejecutado.");
+        }
+        catch (Exception ex)
+        {
+            WinUtilStatusText.Text = "Error cargando WinUtil";
+            Log($"Error cargando catálogo WinUtil: {ex.Message}");
+            MessageBox.Show(
+                "No se pudo cargar el catálogo de WinUtil. La app no ejecutó ningún código remoto.\n\n" +
+                ex.Message,
+                "WinUtil",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void OpenWinUtilRepo_Click(object sender, RoutedEventArgs e) =>
+        OpenShell(WinUtilCatalogService.RepositoryUrl);
+
+    private void OpenStartupSettings_Click(object sender, RoutedEventArgs e) =>
+        OpenShell("ms-settings:startupapps");
+
+    private void OpenTaskManager_Click(object sender, RoutedEventArgs e) =>
+        OpenShell("taskmgr.exe");
+
+    private void OpenServices_Click(object sender, RoutedEventArgs e) =>
+        OpenShell("services.msc");
 
     private static void OpenShell(string target)
     {
