@@ -7,6 +7,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: windows-latest
@@ -15,29 +18,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore
-        run: dotnet restore .\Windows11Optimizer.sln
+      - name: Generate portable EXE
+        shell: pwsh
+        run: .\exe-generated.ps1 -Clean -PortableOnly
 
-      - name: Build
-        run: dotnet build .\Windows11Optimizer.sln -c Release --no-restore
-
-      - name: Publish win-x64
-        run: >-
-          dotnet publish .\src\Windows11Optimizer\Windows11Optimizer.csproj
-          -c Release
-          -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -o .\publish
-
-      - name: Upload executable
+      - name: Upload portable EXE
         uses: actions/upload-artifact@v4
         with:
-          name: Windows11Optimizer-win-x64
-          path: publish\
+          name: Windows11Optimizer-v0.2-win-x64
+          path: artifacts\portable\
+          if-no-files-found: error
