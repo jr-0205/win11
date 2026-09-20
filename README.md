@@ -271,3 +271,37 @@ Opcionalmente puede activar:
 La aplicación **no elimina ni modifica las políticas de VBS, Integridad de memoria o Credential Guard** al cambiar a Modo VMware. Solo cambia el arranque del hipervisor mediante BCD. La pantalla consulta de forma independiente el estado de VBS e Integridad de memoria y sigue detectando si hace falta reiniciar.
 
 Los estados originales de los servicios administrados se incorporan al backup para poder restaurarlos.
+
+
+## Optimización inteligente v0.7
+
+La interfaz principal se simplificó para que el usuario no tenga que administrar servicios o tareas por nombre.
+
+### Optimización
+
+El módulo inteligente:
+
+- analiza únicamente componentes conocidos por una allowlist;
+- detecta utilidades Acer, VMware y Docker que se inician siempre con Windows;
+- recomienda dejarlos disponibles para que una aplicación los inicie cuando los necesite;
+- usa inicio Manual en lugar de Disabled;
+- no fuerza el cierre de componentes que ya están funcionando;
+- no deshabilita actividades programadas automáticamente;
+- conserva una copia del estado anterior;
+- permite deshacer cambios;
+- detecta entradas antiguas del inicio de Windows y las envía a revisión.
+
+### Máquinas virtuales
+
+Solo hay dos elecciones principales:
+
+- **Windows y Docker**: prioriza Docker Desktop, WSL2, Windows Sandbox y las funciones de virtualización de Windows.
+- **VMware**: prioriza VMware, máquinas virtuales y compatibilidad con virtualización anidada cuando el modo de virtualización de Windows interfiera.
+
+Los servicios VMware se administran internamente; ya no existe una pantalla separada para iniciarlos o detenerlos uno por uno.
+
+### Ajustes
+
+La antigua vista completa de WinUtil dejó de mostrarse al usuario.
+
+La pantalla **Ajustes** enseña únicamente opciones que Windows11Optimizer ha portado de forma nativa, reversible y comprensible.
