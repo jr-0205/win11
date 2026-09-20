@@ -11,9 +11,12 @@ Set-StrictMode -Version Latest
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Project = Join-Path $Root "src\Windows11Optimizer\Windows11Optimizer.csproj"
+$AgentProject = Join-Path $Root "src\Windows11Optimizer.Agent\Windows11Optimizer.Agent.csproj"
 $Solution = Join-Path $Root "Windows11Optimizer.sln"
 $Artifacts = Join-Path $Root "artifacts"
 $PublishDir = Join-Path $Artifacts "publish"
+$MainPublishDir = Join-Path $PublishDir "main"
+$AgentPublishDir = Join-Path $PublishDir "agent"
 $PortableDir = Join-Path $Artifacts "portable"
 $InstallerDir = Join-Path $Artifacts "installer"
 $IssFile = Join-Path $Root "installer\Windows11Optimizer.iss"
@@ -38,21 +41,25 @@ function Find-InnoCompiler {
 }
 
 function Ensure-AppNotRunning {
-    $running = @(Get-Process -Name "Windows11Optimizer" -ErrorAction SilentlyContinue)
+    $running = @(
+        Get-Process -Name "Windows11Optimizer" -ErrorAction SilentlyContinue
+        Get-Process -Name "Windows11Optimizer.Agent" -ErrorAction SilentlyContinue
+    )
+
     if ($running.Count -eq 0) {
         return
     }
 
     if ($ForceCloseApp) {
-        Write-Step "Cerrando Windows11Optimizer"
+        Write-Step "Cerrando Windows11Optimizer y el agente"
         foreach ($process in $running) {
             try {
-                Write-Host "Cerrando PID $($process.Id)..." -ForegroundColor Yellow
+                Write-Host "Cerrando $($process.ProcessName) PID $($process.Id)..." -ForegroundColor Yellow
                 Stop-Process -Id $process.Id -Force -ErrorAction Stop
                 Wait-Process -Id $process.Id -Timeout 5 -ErrorAction SilentlyContinue
             }
             catch {
-                throw "No se pudo cerrar Windows11Optimizer (PID $($process.Id)). Cierra la app manualmente y vuelve a ejecutar."
+                throw "No se pudo cerrar $($process.ProcessName) (PID $($process.Id)). Cierra la app y el agente manualmente y vuelve a ejecutar."
             }
         }
 
@@ -60,8 +67,8 @@ function Ensure-AppNotRunning {
         return
     }
 
-    $pids = ($running | Select-Object -ExpandProperty Id) -join ", "
-    throw "Windows11Optimizer.exe está en ejecución (PID: $pids) y bloquea artifacts\portable\Windows11Optimizer.exe. Cierra la app y vuelve a ejecutar, o usa: .\exe-generated.ps1 -Clean -PortableOnly -ForceCloseApp"
+    $names = ($running | ForEach-Object { "$($_.ProcessName) PID $($_.Id)" }) -join ", "
+    throw "$names está en ejecución y puede bloquear artifacts\portable. Cierra la app y el agente, o usa: .\exe-generated.ps1 -Clean -PortableOnly -ForceCloseApp"
 }
 
 function Remove-ArtifactsSafely {
@@ -98,11 +105,17 @@ if (-not (Test-Path $Project)) {
     throw "No se encontró el proyecto: $Project"
 }
 
+if (-not (Test-Path $AgentProject)) {
+    throw "No se encontró el proyecto del agente: $AgentProject"
+}
+
 if ($Clean) {
     Remove-ArtifactsSafely
 }
 
 New-Item $PublishDir -ItemType Directory -Force | Out-Null
+New-Item $MainPublishDir -ItemType Directory -Force | Out-Null
+New-Item $AgentPublishDir -ItemType Directory -Force | Out-Null
 New-Item $PortableDir -ItemType Directory -Force | Out-Null
 New-Item $InstallerDir -ItemType Directory -Force | Out-Null
 
@@ -140,24 +153,36 @@ Write-Step "Compilando Release"
 & dotnet build $Solution -c Release --no-restore
 if ($LASTEXITCODE -ne 0) { throw "dotnet build falló." }
 
-Write-Step "Publicando Windows x64 self-contained"
-& dotnet publish $Project -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o $PublishDir
-if ($LASTEXITCODE -ne 0) { throw "dotnet publish falló." }
+Write-Step "Publicando Windows11Optimizer x64 self-contained"
+& dotnet publish $Project -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o $MainPublishDir
+if ($LASTEXITCODE -ne 0) { throw "dotnet publish del optimizador falló." }
 
-$exe = Join-Path $PublishDir "Windows11Optimizer.exe"
+Write-Step "Publicando agente ligero x64 self-contained"
+& dotnet publish $AgentProject -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o $AgentPublishDir
+if ($LASTEXITCODE -ne 0) { throw "dotnet publish del agente falló." }
+
+$exe = Join-Path $MainPublishDir "Windows11Optimizer.exe"
+$agentExe = Join-Path $AgentPublishDir "Windows11Optimizer.Agent.exe"
+
 if (-not (Test-Path $exe)) {
     throw "La publicación terminó, pero no apareció Windows11Optimizer.exe."
+}
+
+if (-not (Test-Path $agentExe)) {
+    throw "La publicación terminó, pero no apareció Windows11Optimizer.Agent.exe."
 }
 
 Ensure-AppNotRunning
 
 Copy-Item $exe (Join-Path $PortableDir "Windows11Optimizer.exe") -Force
+Copy-Item $agentExe (Join-Path $PortableDir "Windows11Optimizer.Agent.exe") -Force
 Copy-Item (Join-Path $Root "LICENSE") (Join-Path $PortableDir "LICENSE.txt") -Force
 Copy-Item (Join-Path $Root "THIRD-PARTY-NOTICES.md") (Join-Path $PortableDir "THIRD-PARTY-NOTICES.md") -Force
 
 Write-Host ""
-Write-Host "EXE portable generado:" -ForegroundColor Green
+Write-Host "Portable generado:" -ForegroundColor Green
 Write-Host "  $(Join-Path $PortableDir 'Windows11Optimizer.exe')"
+Write-Host "  $(Join-Path $PortableDir 'Windows11Optimizer.Agent.exe')"
 
 if ($PortableOnly) {
     Write-Host ""
@@ -211,5 +236,6 @@ Write-Host ""
 Write-Host "LISTO" -ForegroundColor Green
 Write-Host "Portable:"
 Write-Host "  $(Join-Path $PortableDir 'Windows11Optimizer.exe')"
+Write-Host "  $(Join-Path $PortableDir 'Windows11Optimizer.Agent.exe')"
 Write-Host "Instalador:"
 Write-Host "  $setup"
