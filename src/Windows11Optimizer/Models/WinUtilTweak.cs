@@ -20,7 +20,7 @@ public sealed class WinUtilTweak
     public int ScheduledTaskActions { get; init; }
 
     public string Actions =>
-        $"Registro: {RegistryActions} · Servicios: {ServiceActions} · Scripts: {ScriptActions} · Tareas: {ScheduledTaskActions}";
+        $"Configuración: {RegistryActions} · Servicios: {ServiceActions} · Automatizaciones: {ScriptActions} · Tareas: {ScheduledTaskActions}";
 }
 
 public sealed class WinUtilCatalogResult
