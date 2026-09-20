@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Windows11Optimizer.Core;
 using Windows11Optimizer.Models;
 using Windows11Optimizer.Profiles;
 using Windows11Optimizer.Services;
@@ -23,7 +24,13 @@ public partial class MainWindow : Window
     private readonly AutorunsService _autoruns = new();
     private readonly VirtualizationModeService _virtualization = new();
     private readonly ThemeService _theme = new();
+    private readonly InstalledAppService _installedApps = new();
+    private readonly OpenAiAnalysisService _openAi = new();
+    private readonly AgentIntegrationService _agent = new();
+    private readonly FocusBoostService _focusBoost = new();
     private readonly OptimizationService _optimizer;
+    private readonly SafeActionEngine _safeActions;
+    private readonly SystemAssessmentService _systemAssessment;
     private readonly DiagnosticReportService _diagnostics;
     private readonly SmartAnalysisService _smartAnalysis;
     private readonly SmartOptimizationService _smartOptimizer;
@@ -41,6 +48,12 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _optimizer = new OptimizationService(_serviceManager, _taskManager, _backup);
+        _safeActions = new SafeActionEngine(_serviceManager, _winUtilNative);
+        _systemAssessment = new SystemAssessmentService(
+            _metrics,
+            _startup,
+            _installedApps,
+            _safeActions);
         _diagnostics = new DiagnosticReportService(_metrics, _serviceManager, _startup);
         _smartAnalysis = new SmartAnalysisService(_metrics, _startup, _autoruns);
         _smartOptimizer = new SmartOptimizationService(
@@ -63,6 +76,7 @@ public partial class MainWindow : Window
         {
             _timer.Stop();
             _toastTimer.Stop();
+            _focusBoost.Dispose();
         };
     }
 
@@ -82,6 +96,22 @@ public partial class MainWindow : Window
         await RefreshVirtualizationAsync();
         await RefreshMetricsAsync();
         UpdateAutorunsAvailability();
+        await RefreshInstalledAppsAsync();
+        RefreshFocusProcesses();
+        RefreshFocusStatus();
+        UpdateAiAvailability();
+
+        if (_agent.IsAvailable)
+        {
+            try
+            {
+                _agent.EnsureStartup();
+            }
+            catch (Exception ex)
+            {
+                Log($"No se pudo registrar el agente de inicio: {ex.Message}");
+            }
+        }
 
         _timer.Start();
         _ = LoadWinUtilCatalogAsync(forceRefresh: false, showFeedback: false);
@@ -129,6 +159,469 @@ public partial class MainWindow : Window
 
         AutorunsStatusText.Text =
             $"Autoruns detectado: {Path.GetFileName(tool)}. Listo para análisis avanzado.";
+    }
+
+    private void UpdateAiAvailability()
+    {
+        AiExamStatusText.Text = _openAi.IsConfigured
+            ? $"OpenAI listo · modelo {_openAi.Model}. La IA solo puede elegir acciones del catálogo seguro."
+            : "IA no configurada. Define OPENAI_API_KEY en Windows; la clave no se guarda en el proyecto.";
+    }
+
+    private async void RunAiExam_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_openAi.IsConfigured)
+        {
+            UpdateAiAvailability();
+            ShowToast(
+                "Configura OPENAI_API_KEY para usar el examen con IA.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        BeginActivity(
+            "Examen con IA",
+            "Recopilando un resumen limitado del sistema y consultando el catálogo seguro…");
+
+        try
+        {
+            var snapshot = await _systemAssessment.CaptureAsync();
+            var result = await _openAi.AnalyzeAsync(snapshot);
+
+            var rows = result.Recommendations
+                .Select(recommendation =>
+                {
+                    var action = SafeActionCatalog.Find(recommendation.ActionId);
+                    return action is null
+                        ? null
+                        : new AiRecommendationRow
+                        {
+                            ActionId = action.Id,
+                            Title = action.Title,
+                            Category = action.Category,
+                            Reason = recommendation.Reason,
+                            Confidence = recommendation.Confidence,
+                            Impact = action.Impact,
+                            Risk = action.Risk,
+                            Revert = action.Revert,
+                            CanApply = action.CanApply
+                        };
+                })
+                .Where(x => x is not null)
+                .Cast<AiRecommendationRow>()
+                .ToList();
+
+            AiRecommendationGrid.ItemsSource = rows;
+            AiExamStatusText.Text =
+                string.IsNullOrWhiteSpace(result.Summary)
+                    ? $"Examen terminado: {rows.Count} recomendaciones válidas."
+                    : result.Summary;
+
+            AiRecommendationGrid.SelectedIndex =
+                rows.Count > 0 ? 0 : -1;
+
+            EndActivity(
+                "Examen con IA completado",
+                $"{rows.Count} recomendaciones válidas del catálogo local.",
+                ActivityKind.Success);
+
+            ShowToast(
+                "La IA terminó de recomendar. Ningún cambio se aplicó automáticamente.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error en examen con IA: {ex.Message}");
+            AiExamStatusText.Text = ex.Message;
+            EndActivity(
+                "No se pudo completar el examen con IA",
+                ex.Message,
+                ActivityKind.Error);
+            ShowToast(
+                "No se pudo completar el examen con IA.",
+                ActivityKind.Error);
+        }
+    }
+
+    private void AiRecommendationGrid_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (AiRecommendationGrid.SelectedItem is not AiRecommendationRow row)
+        {
+            AiRecommendationDetailText.Text =
+                "Selecciona una recomendación para ver impacto y cómo revertirla.";
+            ApplyAiRecommendationButton.IsEnabled = false;
+            RevertAiRecommendationButton.IsEnabled = false;
+            return;
+        }
+
+        var state = _safeActions.GetState(row.ActionId);
+
+        AiRecommendationDetailText.Text =
+            $"Impacto: {row.Impact}{Environment.NewLine}" +
+            $"Riesgo: {row.Risk} · Estado: {state}{Environment.NewLine}" +
+            $"Cómo se deshace: {row.Revert}";
+
+        ApplyAiRecommendationButton.IsEnabled =
+            row.CanApply &&
+            !string.Equals(state, "Aplicado", StringComparison.OrdinalIgnoreCase);
+
+        RevertAiRecommendationButton.IsEnabled =
+            _safeActions.HasBackup(row.ActionId);
+    }
+
+    private void ApplyAiRecommendation_Click(object sender, RoutedEventArgs e)
+    {
+        if (AiRecommendationGrid.SelectedItem is not AiRecommendationRow row)
+            return;
+
+        if (!row.CanApply)
+        {
+            ShowToast(
+                "Esta recomendación requiere revisión manual y no se ejecuta automáticamente.",
+                ActivityKind.Info);
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            $"{row.Title}{Environment.NewLine}{Environment.NewLine}" +
+            $"Impacto: {row.Impact}{Environment.NewLine}" +
+            $"Riesgo: {row.Risk}{Environment.NewLine}" +
+            $"Deshacer: {row.Revert}{Environment.NewLine}{Environment.NewLine}" +
+            "La IA no ejecutará nada; el cambio lo aplicará el motor local validado. ¿Continuar?",
+            "Aplicar ajuste seguro",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            _safeActions.Apply(row.ActionId);
+            Log($"Ajuste seguro aplicado: {row.ActionId}");
+            AiRecommendationGrid_SelectionChanged(
+                AiRecommendationGrid,
+                new SelectionChangedEventArgs(
+                    Selector.SelectionChangedEvent,
+                    Array.Empty<object>(),
+                    Array.Empty<object>()));
+            RefreshStartup();
+            ShowToast($"Aplicado: {row.Title}.", ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error aplicando {row.ActionId}: {ex.Message}");
+            ShowToast(ex.Message, ActivityKind.Error);
+        }
+    }
+
+    private void RevertAiRecommendation_Click(object sender, RoutedEventArgs e)
+    {
+        if (AiRecommendationGrid.SelectedItem is not AiRecommendationRow row)
+            return;
+
+        try
+        {
+            _safeActions.Revert(row.ActionId);
+            Log($"Ajuste seguro restaurado: {row.ActionId}");
+            AiRecommendationGrid_SelectionChanged(
+                AiRecommendationGrid,
+                new SelectionChangedEventArgs(
+                    Selector.SelectionChangedEvent,
+                    Array.Empty<object>(),
+                    Array.Empty<object>()));
+            ShowToast($"Deshecho: {row.Title}.", ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error restaurando {row.ActionId}: {ex.Message}");
+            ShowToast(ex.Message, ActivityKind.Error);
+        }
+    }
+
+    private void RefreshFocusProcesses()
+    {
+        FocusProcessGrid.ItemsSource = _focusBoost
+            .GetCandidateProcesses()
+            .Where(x => x.IsAllowedTarget)
+            .ToList();
+
+        RefreshFocusStatus();
+    }
+
+    private void RefreshFocusProcesses_Click(object sender, RoutedEventArgs e) =>
+        RefreshFocusProcesses();
+
+    private void RefreshFocusStatus()
+    {
+        try
+        {
+            FocusBoostStatusText.Text = _focusBoost.GetStatus().DisplayText;
+        }
+        catch
+        {
+            FocusBoostStatusText.Text = "No se pudo comprobar Focus Boost.";
+        }
+    }
+
+    private void StartFocusBoost_Click(object sender, RoutedEventArgs e)
+    {
+        if (FocusProcessGrid.SelectedItem is not FocusProcessInfo selected)
+        {
+            ShowToast(
+                "Selecciona primero un proceso activo.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        try
+        {
+            if (_agent.IsAvailable)
+                _agent.StartAgent();
+
+            var status = _focusBoost.Start(selected.Pid);
+            FocusBoostStatusText.Text = status.DisplayText;
+            ShowToast(
+                $"Focus Boost activo para {selected.Name}.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            Log($"Error iniciando Focus Boost: {ex.Message}");
+            ShowToast(ex.Message, ActivityKind.Error);
+        }
+    }
+
+    private void StopFocusBoost_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _focusBoost.Restore();
+            RefreshFocusStatus();
+            ShowToast(
+                "Focus Boost detenido y prioridades restauradas.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            ShowToast(ex.Message, ActivityKind.Error);
+        }
+    }
+
+    private void OpenMiniFocus_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _agent.OpenMiniFocus();
+        }
+        catch (Exception ex)
+        {
+            ShowToast(ex.Message, ActivityKind.Warning);
+        }
+    }
+
+    private void OpenAgentSettings_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _agent.OpenSettings();
+        }
+        catch (Exception ex)
+        {
+            ShowToast(ex.Message, ActivityKind.Warning);
+        }
+    }
+
+    private async Task RefreshInstalledAppsAsync()
+    {
+        var apps = await Task.Run(() => _installedApps.GetInstalledApps());
+        InstalledAppsGrid.ItemsSource = apps;
+        InstalledAppsSummaryText.Text =
+            $"{apps.Count} aplicaciones registradas. La desinstalación usa únicamente el desinstalador publicado por Windows.";
+    }
+
+    private async void RefreshInstalledApps_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await RefreshInstalledAppsAsync();
+            ShowToast("Aplicaciones actualizadas.", ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            ShowToast(
+                $"No se pudo actualizar la lista: {ex.Message}",
+                ActivityKind.Error);
+        }
+    }
+
+    private void InstalledAppsGrid_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (InstalledAppsGrid.SelectedItem is not InstalledApp app)
+        {
+            SelectedAppDetailText.Text =
+                "Selecciona una aplicación para ver sus datos.";
+            return;
+        }
+
+        SelectedAppDetailText.Text =
+            $"{app.DisplayName} · {app.VersionDisplay}{Environment.NewLine}" +
+            $"Editor: {app.PublisherDisplay}{Environment.NewLine}" +
+            $"Desinstalador registrado: {(app.CanUninstall ? "sí" : "no")}";
+        AppAiExplanationText.Text =
+            "Pulsa “Explicar con IA” para obtener una explicación basada únicamente en nombre, versión y editor.";
+    }
+
+    private void UninstallSelectedApp_Click(object sender, RoutedEventArgs e)
+    {
+        if (InstalledAppsGrid.SelectedItem is not InstalledApp app)
+        {
+            ShowToast(
+                "Selecciona primero una aplicación.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        if (!app.CanUninstall)
+        {
+            ShowToast(
+                "Esta aplicación no publica un desinstalador que podamos iniciar de forma segura.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            $"Se abrirá el desinstalador registrado por Windows para “{app.DisplayName}”.{Environment.NewLine}{Environment.NewLine}" +
+            "Windows11Optimizer no borrará carpetas ni archivos por su cuenta. ¿Continuar?",
+            "Desinstalar aplicación",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            _installedApps.StartUninstall(app);
+            Log($"Desinstalador iniciado: {app.DisplayName}");
+        }
+        catch (Exception ex)
+        {
+            ShowToast(ex.Message, ActivityKind.Error);
+        }
+    }
+
+    private void OpenSelectedAppLocation_Click(object sender, RoutedEventArgs e)
+    {
+        if (InstalledAppsGrid.SelectedItem is not InstalledApp app)
+            return;
+
+        try
+        {
+            _installedApps.OpenInstallLocation(app);
+        }
+        catch (Exception ex)
+        {
+            ShowToast(ex.Message, ActivityKind.Warning);
+        }
+    }
+
+    private async void ExplainSelectedAppWithAi_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (InstalledAppsGrid.SelectedItem is not InstalledApp app)
+        {
+            ShowToast(
+                "Selecciona primero una aplicación.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        if (!_openAi.IsConfigured)
+        {
+            ShowToast(
+                "Configura OPENAI_API_KEY para usar explicaciones con IA.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        AppAiExplanationText.Text = "Consultando…";
+
+        try
+        {
+            var explanation =
+                await _openAi.ExplainApplicationAsync(app);
+
+            AppAiExplanationText.Text = explanation.DisplayText;
+        }
+        catch (Exception ex)
+        {
+            AppAiExplanationText.Text = ex.Message;
+        }
+    }
+
+    private void OpenAppsSettings_Click(object sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo("ms-settings:appsfeatures")
+        {
+            UseShellExecute = true
+        });
+    }
+
+    private void RemoveSelectedResidue_Click(object sender, RoutedEventArgs e)
+    {
+        if (ResidueGrid.SelectedItem is not StartupEntry entry ||
+            !entry.CanRemoveSafely)
+        {
+            ShowToast(
+                "Selecciona una referencia huérfana confirmada.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            $"Se quitará únicamente la referencia de inicio “{entry.Name}”.{Environment.NewLine}" +
+            "No se borrará ningún programa ni carpeta y se guardará una copia para restaurar. ¿Continuar?",
+            "Quitar residuo confirmado",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            _startup.RemoveOrphanedEntry(entry);
+            RefreshStartup();
+            ShowToast(
+                "Referencia huérfana eliminada de forma reversible.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            ShowToast(ex.Message, ActivityKind.Error);
+        }
+    }
+
+    private void RestoreResidue_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var restored = _startup.RestoreLastRemoved();
+            RefreshStartup();
+            ShowToast(
+                $"Referencia restaurada: {restored.Name}.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            ShowToast(ex.Message, ActivityKind.Warning);
+        }
     }
 
     private async void AnalyzeComputer_Click(object sender, RoutedEventArgs e)
@@ -287,6 +780,7 @@ public partial class MainWindow : Window
             RamText.Text = $"{m.RamPercent:N1} %";
             RamGbText.Text = $"{m.UsedRamGb:N2} / {m.TotalRamGb:N2} GB";
             ProcessText.Text = m.ProcessCount.ToString();
+            RefreshFocusStatus();
         }
         catch (Exception ex)
         {
@@ -325,6 +819,18 @@ public partial class MainWindow : Window
         };
 
         RestoreStartupEntryButton.IsEnabled = _startup.HasRestorableEntry;
+
+        var residues = entries
+            .Where(x => x.IsOrphaned && x.CanRemoveSafely)
+            .ToList();
+
+        ResidueGrid.ItemsSource = residues;
+        ResidueSummaryText.Text = residues.Count switch
+        {
+            0 => "No encontramos referencias huérfanas confirmadas que puedan borrarse automáticamente.",
+            1 => "Encontramos 1 referencia huérfana confirmada. El borrado usa el mismo motor seguro y reversible de Inicio de Windows.",
+            _ => $"Encontramos {residues.Count} referencias huérfanas confirmadas. Solo estas pueden borrarse automáticamente."
+        };
     }
 
     private void RefreshStartup_Click(object sender, RoutedEventArgs e)
