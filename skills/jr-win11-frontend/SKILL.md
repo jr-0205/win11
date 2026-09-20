@@ -493,39 +493,110 @@ La interfaz nunca debe permitir visualmente algo que el motor bloqueará despué
 
 No poner "hypervisorlaunchtype" como título.
 
-Usar:
+La pantalla debe explicar la diferencia funcional entre los dos modos sin ocultar el impacto de seguridad.
 
 ## Modo normal
 
-Descripción:
+Descripción conceptual:
 
-> Compatible con las funciones de virtualización de Windows.
+> Deja disponible el hipervisor de Windows.
+
+Debe explicarse como el modo adecuado para funciones que dependen del hipervisor de Windows, por ejemplo:
+
+- Docker Desktop con WSL2/Hyper-V;
+- Hyper-V;
+- Windows Sandbox;
+- Virtual Machine Platform;
+- VBS;
+- Integridad de memoria/HVCI cuando esté configurada.
+
+Técnico:
+
+`hypervisorlaunchtype=auto`
 
 ## Modo VMware
 
-Descripción:
+Descripción conceptual:
 
-> Puede ayudar cuando VMware tiene conflictos con el hipervisor de Windows.
+> Evita que el hipervisor de Windows arranque en el próximo inicio.
+
+Puede presentarse como una opción de compatibilidad para VMware y virtualización anidada cuando Hyper-V/VBS interfieren.
+
+Técnico:
+
+`hypervisorlaunchtype=off`
+
+### Regla crítica de seguridad
+
+El cambio de modo VMware **no debe borrar ni desactivar permanentemente**:
+
+- políticas de VBS;
+- Integridad de memoria;
+- Credential Guard;
+- configuraciones de Device Guard;
+- preferencias de Seguridad de Windows.
+
+La app solo controla el arranque del hipervisor mediante BCD.
+
+Si el hipervisor no está en ejecución, las funciones que dependan de él pueden no estar activas durante esa sesión. Al volver a modo normal, las políticas originales siguen disponibles.
+
+## Estado a mostrar
 
 Mostrar:
 
-- modo actual;
-- modo preparado para el próximo reinicio;
-- si existe copia de seguridad;
-- reinicio pendiente.
+- modo configurado;
+- hipervisor activo/no activo;
+- VBS: no habilitado / configurado no activo / en ejecución;
+- Integridad de memoria activa/no activa;
+- reinicio pendiente;
+- copia de seguridad.
 
-Acciones:
+## Perfil de servicios VMware
+
+La preparación de VMware debe diferenciar:
+
+### Principales
+
+- `VMAuthdService`;
+- `VMnetDHCP`;
+- `VMware NAT Service`.
+
+Al preparar VMware:
+
+- ponerlos en Manual;
+- iniciarlos si están instalados.
+
+### USB opcional
+
+- `VMUSBArbService`.
+
+Solo activar cuando el usuario solicite dispositivos USB dentro de las VMs.
+
+### Autoinicio opcional
+
+- `VMwareAutostartService`.
+
+Solo activar cuando el usuario solicite autoinicio de VMs configuradas.
+
+No activar servicios opcionales solo porque existan.
+
+## Acciones
 
 - Usar modo normal;
 - Preparar para VMware;
+- Pausar servicios VMware;
 - Volver al estado original;
-- Reiniciar ahora.
+- Actualizar estado;
+- Reiniciar para aplicar.
 
-El detalle:
+El frontend debe dejar claro que:
 
-`hypervisorlaunchtype=auto/off`
+- cambiar el BCD puede requerir reinicio;
+- preparar servicios VMware puede aplicarse inmediatamente;
+- no todo cambio requiere reiniciar;
+- el estado debe leerse automáticamente antes de sugerir un reinicio.
 
-debe ir en tooltip o sección técnica.
+Los detalles técnicos deben permanecer en tooltips o información secundaria.
 
 ---
 
