@@ -1,6 +1,6 @@
 #define MyAppName "Windows 11 Optimizer"
 #define MyAppExeName "Windows11Optimizer.exe"
-#define MyAppVersion "0.7.2"
+#define MyAppVersion "0.8.0"
 #define MyAppPublisher "jr-0205"
 
 [Setup]
@@ -26,7 +26,7 @@ RestartApplications=no
 SetupLogging=yes
 
 [Files]
-Source: "..\artifacts\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\artifacts\portable\*"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -36,4 +36,5 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 Name: "desktopicon"; Description: "Crear acceso directo en el escritorio"; GroupDescription: "Accesos directos:"; Flags: unchecked
 
 [Run]
+Filename: "{app}\Windows11Optimizer.Agent.exe"; Parameters: "--agent"; Flags: nowait skipifsilent
 Filename: "{app}\{#MyAppExeName}"; Description: "Iniciar {#MyAppName}"; Flags: nowait postinstall skipifsilent
