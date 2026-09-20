@@ -1033,7 +1033,7 @@ public partial class MainWindow : Window
             await RefreshVirtualizationAsync();
 
             var stateAfter = await _virtualization.GetStateAsync();
-            var disabledWindowsVirtualization =
+            IReadOnlyList<string> disabledWindowsVirtualization =
                 stateAfter.IsConfiguredForNormal
                     ? GetDisabledWindowsVirtualizationServices()
                     : Array.Empty<string>();
