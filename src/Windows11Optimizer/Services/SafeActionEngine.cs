@@ -7,6 +7,9 @@ namespace Windows11Optimizer.Services;
 
 public sealed class SafeActionEngine
 {
+    private const string PersonalizePath =
+        @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+
     private readonly WindowsServiceManager _services;
     private readonly WinUtilNativeService _winUtil;
 
@@ -29,12 +32,15 @@ public sealed class SafeActionEngine
     {
         "acer.on_demand" => GetAcerState(),
         "windows.transparency_off" => GetDwordState(
-            @"SoftwareMicrosoftWindowsCurrentVersionThemesPersonalize",
+            PersonalizePath,
             "EnableTransparency",
             0),
-        "explorer.show_extensions" => _winUtil.GetState("WPFToggleShowExt"),
-        "explorer.show_hidden" => _winUtil.GetState("WPFToggleHiddenFiles"),
-        "taskbar.end_task" => _winUtil.GetState("WPFTweaksEndTaskOnTaskbar"),
+        "explorer.show_extensions" =>
+            _winUtil.GetState("WPFToggleShowExt"),
+        "explorer.show_hidden" =>
+            _winUtil.GetState("WPFToggleHiddenFiles"),
+        "taskbar.end_task" =>
+            _winUtil.GetState("WPFTweaksEndTaskOnTaskbar"),
         "startup.review_orphans" => "Revisión manual",
         _ => "No disponible"
     };
@@ -42,7 +48,7 @@ public sealed class SafeActionEngine
     public bool CanApply(string id) =>
         SafeActionCatalog.Find(id)?.CanApply == true;
 
-    public void Apply(string id)
+    public async Task ApplyAsync(string id)
     {
         var definition = SafeActionCatalog.Find(id)
             ?? throw new InvalidOperationException("Ajuste desconocido.");
@@ -56,13 +62,13 @@ public sealed class SafeActionEngine
         switch (id)
         {
             case "acer.on_demand":
-                ApplyAcerOnDemand();
+                await ApplyAcerOnDemandAsync();
                 break;
 
             case "windows.transparency_off":
                 ApplyDword(
                     id,
-                    @"SoftwareMicrosoftWindowsCurrentVersionThemesPersonalize",
+                    PersonalizePath,
                     "EnableTransparency",
                     0);
                 break;
@@ -85,12 +91,12 @@ public sealed class SafeActionEngine
         }
     }
 
-    public void Revert(string id)
+    public async Task RevertAsync(string id)
     {
         switch (id)
         {
             case "acer.on_demand":
-                RevertAcerOnDemand();
+                await RevertAcerOnDemandAsync();
                 break;
 
             case "windows.transparency_off":
@@ -147,8 +153,12 @@ public sealed class SafeActionEngine
 
             installed++;
 
-            if (info.StartMode.Equals("Auto", StringComparison.OrdinalIgnoreCase) ||
-                info.StartMode.Equals("Automatic", StringComparison.OrdinalIgnoreCase))
+            if (info.StartMode.Equals(
+                    "Auto",
+                    StringComparison.OrdinalIgnoreCase) ||
+                info.StartMode.Equals(
+                    "Automatic",
+                    StringComparison.OrdinalIgnoreCase))
             {
                 automatic++;
             }
@@ -162,7 +172,7 @@ public sealed class SafeActionEngine
             : $"{automatic} se inician con Windows";
     }
 
-    private void ApplyAcerOnDemand()
+    private async Task ApplyAcerOnDemandAsync()
     {
         var backups = LoadBackups();
 
@@ -199,11 +209,13 @@ public sealed class SafeActionEngine
             if (info is null)
                 continue;
 
-            _services.SetStartupManualAsync(name).GetAwaiter().GetResult();
+            await _services
+                .SetStartupManualAsync(name)
+                .ConfigureAwait(false);
         }
     }
 
-    private void RevertAcerOnDemand()
+    private async Task RevertAcerOnDemandAsync()
     {
         var backups = LoadBackups();
 
@@ -215,12 +227,12 @@ public sealed class SafeActionEngine
 
         foreach (var item in backup.Services)
         {
-            _services.RestoreAsync(
+            await _services
+                .RestoreAsync(
                     item.Name,
                     item.StartMode,
                     item.WasRunning)
-                .GetAwaiter()
-                .GetResult();
+                .ConfigureAwait(false);
         }
 
         backups.Remove("acer.on_demand");
@@ -232,10 +244,13 @@ public sealed class SafeActionEngine
         string name,
         int expected)
     {
-        using var key = Registry.CurrentUser.OpenSubKey(path, false);
+        using var key =
+            Registry.CurrentUser.OpenSubKey(path, writable: false);
+
         var value = key?.GetValue(name);
 
-        return value is not null && Convert.ToInt32(value) == expected
+        return value is not null &&
+               Convert.ToInt32(value) == expected
             ? "Aplicado"
             : "Disponible";
     }
@@ -250,7 +265,9 @@ public sealed class SafeActionEngine
 
         if (!backups.ContainsKey(id))
         {
-            using var currentKey = Registry.CurrentUser.OpenSubKey(path, false);
+            using var currentKey =
+                Registry.CurrentUser.OpenSubKey(path, writable: false);
+
             var current = currentKey?.GetValue(name);
 
             backups[id] = new SafeActionBackup
@@ -264,7 +281,9 @@ public sealed class SafeActionEngine
                         Name = name,
                         Existed = current is not null,
                         PreviousDword =
-                            current is null ? 0 : Convert.ToInt32(current)
+                            current is null
+                                ? 0
+                                : Convert.ToInt32(current)
                     }
                 ]
             };
@@ -272,11 +291,15 @@ public sealed class SafeActionEngine
             SaveBackups(backups);
         }
 
-        using var key = Registry.CurrentUser.CreateSubKey(path, writable: true)
+        using var key =
+            Registry.CurrentUser.CreateSubKey(path, writable: true)
             ?? throw new InvalidOperationException(
-                $"No se pudo abrir HKCU\{path}.");
+                $@"No se pudo abrir HKCU\{path}.");
 
-        key.SetValue(name, value, RegistryValueKind.DWord);
+        key.SetValue(
+            name,
+            value,
+            RegistryValueKind.DWord);
     }
 
     private void RevertRegistryAction(string id)
@@ -291,11 +314,12 @@ public sealed class SafeActionEngine
 
         foreach (var value in backup.RegistryValues)
         {
-            using var key = Registry.CurrentUser.CreateSubKey(
-                value.Path,
-                writable: true)
+            using var key =
+                Registry.CurrentUser.CreateSubKey(
+                    value.Path,
+                    writable: true)
                 ?? throw new InvalidOperationException(
-                    $"No se pudo abrir HKCU\{value.Path}.");
+                    $@"No se pudo abrir HKCU\{value.Path}.");
 
             if (value.Existed)
             {
@@ -306,7 +330,9 @@ public sealed class SafeActionEngine
             }
             else
             {
-                key.DeleteValue(value.Name, throwOnMissingValue: false);
+                key.DeleteValue(
+                    value.Name,
+                    throwOnMissingValue: false);
             }
         }
 
@@ -344,11 +370,15 @@ public sealed class SafeActionEngine
         Dictionary<string, SafeActionBackup> backups)
     {
         Directory.CreateDirectory(_directory);
+
         File.WriteAllText(
             BackupFile,
             JsonSerializer.Serialize(
                 backups,
-                new JsonSerializerOptions { WriteIndented = true }));
+                new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                }));
     }
 }
 
