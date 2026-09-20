@@ -370,6 +370,8 @@ public partial class MainWindow : Window
                     : "Aún no creada";
 
             RestartForVirtualizationButton.IsEnabled = state.PendingRestart;
+            UseNormalVirtualizationButton.IsEnabled = !state.IsConfiguredForNormal;
+            UseVmwareVirtualizationButton.IsEnabled = !state.IsConfiguredForVmware;
 
             if (state.PendingRestart)
             {
@@ -420,6 +422,8 @@ public partial class MainWindow : Window
             VirtualizationRestartHintText.Text =
                 "No reinicies desde la app hasta poder comprobar el estado.";
             RestartForVirtualizationButton.IsEnabled = false;
+            UseNormalVirtualizationButton.IsEnabled = true;
+            UseVmwareVirtualizationButton.IsEnabled = true;
 
             Log($"Error leyendo virtualización: {ex.Message}");
         }
