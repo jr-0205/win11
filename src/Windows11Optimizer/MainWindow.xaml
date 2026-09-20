@@ -26,7 +26,7 @@
                     <TextBlock Text="Windows 11 Optimizer"
                                FontSize="24"
                                FontWeight="SemiBold"/>
-                    <TextBlock Text="Optimización reversible · Perfil seguro · Servicios bajo demanda"
+                    <TextBlock Text="Optimiza Windows sin perder funciones importantes"
                                Foreground="{DynamicResource MutedForegroundBrush}"/>
                 </StackPanel>
 
@@ -120,15 +120,15 @@
                             </Border>
                         </UniformGrid>
 
-                        <GroupBox Header="Perfil seguro">
+                        <GroupBox Header="Optimización recomendada">
                             <StackPanel>
                                 <TextBlock TextWrapping="Wrap" Margin="4">
-                                    Detiene y evita el arranque automático de servicios seleccionados de VMware y utilidades Acer no esenciales. No modifica Defender, Windows Update, búsqueda, audio, Wi-Fi, Bluetooth, touchpad, AMD Graphics ni Quick Access.
+                                    Reduce procesos y servicios que no necesitas todo el tiempo. La app conserva seguridad, actualizaciones, audio, Wi-Fi, Bluetooth, touchpad y otras funciones importantes.
                                 </TextBlock>
                                 <WrapPanel Margin="0,8,0,0">
-                                    <Button Content="Aplicar optimización segura" Click="OptimizeSafe_Click"/>
-                                    <Button Content="Restaurar configuración" Click="Restore_Click"/>
-                                    <Button Content="Exportar diagnóstico" Click="ExportDiagnostic_Click"/>
+                                    <Button Content="Optimizar ahora" Click="OptimizeSafe_Click"/>
+                                    <Button Content="Deshacer cambios" Click="Restore_Click"/>
+                                    <Button Content="Crear reporte del equipo" Click="ExportDiagnostic_Click"/>
                                 </WrapPanel>
                             </StackPanel>
                         </GroupBox>
@@ -144,7 +144,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="Servicios seguros">
+            <TabItem Header="Servicios">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -154,17 +154,17 @@
 
                     <StackPanel Grid.Row="0" Margin="0,0,0,8">
                         <TextBlock FontWeight="SemiBold"
-                                   Text="Administrador seguro de servicios"/>
+                                   Text="Servicios en segundo plano"/>
                         <TextBlock Margin="0,3,0,5"
                                    TextWrapping="Wrap"
                                    Foreground="{DynamicResource MutedForegroundBrush}"
-                                   Text="Selecciona un servicio aprobado. Puedes cambiarlo entre Automático y Manual, iniciarlo o detenerlo. Solo los servicios bajo demanda aprobados permiten Deshabilitado. Los servicios protegidos se muestran únicamente como referencia."/>
+                                   Text="Aquí puedes decidir qué servicios deben iniciar con Windows y cuáles solo deben funcionar cuando realmente los necesites. La app bloquea automáticamente los servicios que no es seguro modificar."/>
                         <WrapPanel>
-                            <Button Content="Iniciar VMware" Click="StartVmware_Click"/>
-                            <Button Content="Detener VMware" Click="StopVmware_Click"/>
-                            <Button Content="Iniciar utilidades Acer" Click="StartAcer_Click"/>
-                            <Button Content="Detener utilidades Acer" Click="StopAcer_Click"/>
-                            <Button Content="Actualizar" Click="RefreshServices_Click"/>
+                            <Button Content="Activar VMware" Click="StartVmware_Click"/>
+                            <Button Content="Pausar VMware" Click="StopVmware_Click"/>
+                            <Button Content="Activar utilidades Acer" Click="StartAcer_Click"/>
+                            <Button Content="Pausar utilidades Acer" Click="StopAcer_Click"/>
+                            <Button Content="Actualizar lista" Click="RefreshServices_Click"/>
                         </WrapPanel>
                     </StackPanel>
 
@@ -181,11 +181,11 @@
                                 <TextBlock x:Name="SelectedServiceText" Text="Ninguno" FontWeight="SemiBold"/>
                             </StackPanel>
                             <WrapPanel DockPanel.Dock="Right">
-                                <Button Content="Manual" Click="SetServiceManual_Click" ToolTip="No arranca por sí solo, pero una aplicación puede iniciarlo cuando lo necesite."/>
-                                <Button Content="Automático" Click="SetServiceAutomatic_Click" ToolTip="Windows intentará iniciarlo durante el arranque."/>
+                                <Button Content="Solo cuando se necesite (Manual)" Click="SetServiceManual_Click" ToolTip="No arranca por sí solo, pero una aplicación puede iniciarlo cuando lo necesite."/>
+                                <Button Content="Iniciar con Windows (Automático)" Click="SetServiceAutomatic_Click" ToolTip="Windows intentará iniciarlo durante el arranque."/>
                                 <Button Content="Iniciar ahora" Click="StartSelectedService_Click"/>
                                 <Button Content="Detener ahora" Click="StopSelectedService_Click"/>
-                                <Button Content="Deshabilitar arranque" Click="DisableSelectedService_Click" ToolTip="Disponible solo para servicios bajo demanda aprobados."/>
+                                <Button Content="No iniciar automáticamente" Click="DisableSelectedService_Click" ToolTip="Disponible solo para servicios bajo demanda aprobados."/>
                             </WrapPanel>
                         </DockPanel>
                     </Border>
@@ -201,16 +201,16 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Grupo" Binding="{Binding Group}" Width="110"/>
                             <DataGridTextColumn Header="Servicio" Binding="{Binding DisplayName}" Width="*"/>
-                            <DataGridTextColumn Header="Nombre interno" Binding="{Binding Name}" Width="220"/>
-                            <DataGridTextColumn Header="Estado" Binding="{Binding State}" Width="110"/>
-                            <DataGridTextColumn Header="Inicio" Binding="{Binding StartMode}" Width="110"/>
-                            <DataGridTextColumn Header="Política" Binding="{Binding Policy}" Width="200"/>
+                            <DataGridTextColumn Header="Nombre técnico" Binding="{Binding Name}" Width="220"/>
+                            <DataGridTextColumn Header="Estado" Binding="{Binding StateDisplay}" Width="110"/>
+                            <DataGridTextColumn Header="Cómo inicia" Binding="{Binding StartModeDisplay}" Width="110"/>
+                            <DataGridTextColumn Header="Recomendación" Binding="{Binding PolicyDisplay}" Width="200"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Virtualización">
+            <TabItem Header="Máquinas virtuales">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -227,13 +227,13 @@
                             BorderThickness="1"
                             Margin="0,0,0,8">
                         <StackPanel>
-                            <TextBlock Text="Selector del hipervisor de Windows"
+                            <TextBlock Text="Modo para máquinas virtuales"
                                        FontSize="18"
                                        FontWeight="SemiBold"/>
                             <TextBlock Margin="0,4,0,0"
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource MutedForegroundBrush}"
-                                       Text="Controla hypervisorlaunchtype para el próximo arranque. AUTO conserva el hipervisor de Windows; OFF evita que se cargue al reiniciar. Esto no cambia la virtualización del BIOS."/>
+                                       Text="Usa el modo normal para las funciones de virtualización de Windows. Si VMware presenta conflictos o rendimiento reducido, puedes preparar el equipo para usar VMware directamente. El cambio se aplica al reiniciar."/>
                         </StackPanel>
                     </Border>
 
@@ -245,7 +245,7 @@
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1">
                             <StackPanel>
-                                <TextBlock Text="Próximo arranque"
+                                <TextBlock Text="Modo preparado para el próximo reinicio"
                                            Foreground="{DynamicResource MutedForegroundBrush}"/>
                                 <TextBlock x:Name="VirtualizationBootModeText"
                                            Text="Consultando…"
@@ -263,7 +263,7 @@
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1">
                             <StackPanel>
-                                <TextBlock Text="Hipervisor ahora"
+                                <TextBlock Text="Estado actual"
                                            Foreground="{DynamicResource MutedForegroundBrush}"/>
                                 <TextBlock x:Name="VirtualizationCurrentText"
                                            Text="Consultando…"
@@ -280,7 +280,7 @@
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1">
                             <StackPanel>
-                                <TextBlock Text="Backup"
+                                <TextBlock Text="Copia de seguridad"
                                            Foreground="{DynamicResource MutedForegroundBrush}"/>
                                 <TextBlock x:Name="VirtualizationBackupText"
                                            Text="Consultando…"
@@ -300,19 +300,19 @@
                             BorderThickness="1">
                         <TextBlock TextWrapping="Wrap">
                             <Run FontWeight="SemiBold" Text="Importante: "/>
-                            <Run Text="el cambio solo se aplica después de reiniciar. Con el hipervisor en OFF, Hyper-V y otras funciones que dependen del hipervisor de Windows pueden dejar de estar disponibles hasta volver a AUTO y reiniciar."/>
+                            <Run Text="el cambio solo se aplica después de reiniciar. El modo VMware puede desactivar temporalmente funciones de virtualización de Windows. Puedes volver al modo normal cuando quieras."/>
                         </TextBlock>
                     </Border>
 
                     <StackPanel Grid.Row="3">
                         <WrapPanel>
-                            <Button Content="Modo Normal · AUTO"
+                            <Button Content="Usar modo normal"
                                     Click="SetVirtualizationNormal_Click"
                                     ToolTip="Configura hypervisorlaunchtype=auto para el próximo arranque."/>
-                            <Button Content="Modo VMware directo · OFF"
+                            <Button Content="Preparar para VMware"
                                     Click="SetVirtualizationVmware_Click"
                                     ToolTip="Configura hypervisorlaunchtype=off para el próximo arranque."/>
-                            <Button Content="Restaurar valor original"
+                            <Button Content="Volver al estado original"
                                     Click="RestoreVirtualization_Click"/>
                             <Button Content="Actualizar estado"
                                     Click="RefreshVirtualization_Click"/>
@@ -330,7 +330,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Inicio">
+            <TabItem Header="Inicio de Windows">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -340,9 +340,9 @@
                         <TextBlock DockPanel.Dock="Left"
                                    VerticalAlignment="Center"
                                    TextWrapping="Wrap"
-                                   Text="La aplicación inventaría las entradas de inicio y abre la pantalla oficial de Windows para habilitarlas o deshabilitarlas de forma segura."/>
+                                   Text="Aquí puedes ver los programas que intentan abrirse al encender Windows. Desactivar los que no necesitas puede reducir el uso de memoria y acelerar el inicio."/>
                         <Button DockPanel.Dock="Right"
-                                Content="Abrir Apps de inicio"
+                                Content="Administrar programas de inicio"
                                 Click="OpenStartupSettings_Click"/>
                     </DockPanel>
                     <DataGrid Grid.Row="1"
@@ -360,7 +360,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="WinUtil · catálogo">
+            <TabItem Header="Opciones de WinUtil">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -377,20 +377,20 @@
                             Margin="0,0,0,8">
                         <StackPanel>
                             <TextBlock FontWeight="SemiBold"
-                                       Text="Integración segura de Chris Titus Tech WinUtil"/>
+                                       Text="Ideas de optimización de WinUtil"/>
                             <TextBlock TextWrapping="Wrap"
                                        Margin="0,4,0,0"
                                        Foreground="{DynamicResource MutedForegroundBrush}">
-                                Esta pestaña importa únicamente el catálogo JSON desde una versión fijada del repositorio oficial. No ejecuta irm|iex, no descarga PowerShell ejecutable y ningún tweak de WinUtil puede aplicarse automáticamente desde esta versión de Windows11Optimizer.
+                                Aquí puedes consultar opciones conocidas de WinUtil explicadas en español. Son solo informativas: Windows11Optimizer no aplica ninguna de ellas automáticamente ni ejecuta código remoto.
                             </TextBlock>
                         </StackPanel>
                     </Border>
 
                     <DockPanel Grid.Row="1" Margin="0,0,0,8">
                         <WrapPanel DockPanel.Dock="Left">
-                            <Button Content="Cargar catálogo fijado" Click="LoadWinUtil_Click"/>
-                            <Button Content="Actualizar caché" Click="RefreshWinUtil_Click"/>
-                            <Button Content="Abrir repo oficial" Click="OpenWinUtilRepo_Click"/>
+                            <Button Content="Ver opciones" Click="LoadWinUtil_Click"/>
+                            <Button Content="Actualizar lista" Click="RefreshWinUtil_Click"/>
+                            <Button Content="Ver proyecto original" Click="OpenWinUtilRepo_Click"/>
                         </WrapPanel>
                         <TextBlock x:Name="WinUtilStatusText"
                                    DockPanel.Dock="Right"
@@ -408,18 +408,18 @@
                               EnableRowVirtualization="True"
                               AlternationCount="2">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Riesgo" Binding="{Binding Risk}" Width="85"/>
-                            <DataGridTextColumn Header="Tweak" Binding="{Binding Content}" Width="220"/>
+                            <DataGridTextColumn Header="Nivel" Binding="{Binding Risk}" Width="85"/>
+                            <DataGridTextColumn Header="Opción" Binding="{Binding Content}" Width="220"/>
                             <DataGridTextColumn Header="Categoría" Binding="{Binding Category}" Width="170"/>
-                            <DataGridTextColumn Header="Presets" Binding="{Binding Presets}" Width="170"/>
-                            <DataGridTextColumn Header="Acciones" Binding="{Binding Actions}" Width="190"/>
-                            <DataGridTextColumn Header="Descripción" Binding="{Binding Description}" Width="*"/>
+                            <DataGridTextColumn Header="Perfiles" Binding="{Binding Presets}" Width="170"/>
+                            <DataGridTextColumn Header="Qué modifica" Binding="{Binding Actions}" Width="190"/>
+                            <DataGridTextColumn Header="Qué hace" Binding="{Binding Description}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Registro">
+            <TabItem Header="Detalles técnicos">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
