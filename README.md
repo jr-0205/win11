@@ -198,7 +198,6 @@ La carpeta `tools/` contiene los prototipos PowerShell usados durante el desarro
 ## Roadmap
 
 - [ ] Historial antes/después por perfil.
-- [ ] Administrador reversible de aplicaciones de inicio desde la propia interfaz.
 - [ ] Análisis de servicios de terceros detectados automáticamente.
 - [ ] Perfiles `Equilibrado`, `Mínimo` y `Desarrollo`.
 - [ ] Inicio automático de servicios al abrir aplicaciones asociadas.
@@ -414,3 +413,19 @@ Hotkeys por defecto:
 Las combinaciones se pueden cambiar desde **Hotkeys** o desde el icono de bandeja. El agente intenta registrar las combinaciones antes de guardarlas y avisa si otra aplicación ya las ocupa.
 
 El agente se registra bajo HKCU para iniciar con Windows y puede desactivarse desde su propia configuración.
+
+
+## Seguridad adicional v0.8.1
+
+La administración de Inicio de Windows ahora permite **No iniciar con Windows** para entradas compatibles del Registro. La acción:
+
+- guarda primero el valor exacto;
+- retira únicamente esa referencia de autoarranque;
+- no desinstala ni borra el programa;
+- puede restaurarse desde **Restaurar último cambio**.
+
+La limpieza de referencias huérfanas conserva el mismo motor reversible y distingue internamente si el cambio fue una limpieza o una decisión del usuario.
+
+Focus Boost también refuerza la protección de procesos. Además de la lista de procesos críticos, rechaza como objetivo procesos cuyo ejecutable se encuentre dentro del directorio de Windows. La prioridad máxima continúa siendo `AboveNormal`; nunca usa `High` ni `Realtime`.
+
+La lógica protegida Docker ↔ VMware no forma parte de estos cambios.
