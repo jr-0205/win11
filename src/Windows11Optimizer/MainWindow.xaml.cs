@@ -1115,8 +1115,12 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void RefreshWinUtil_Click(object sender, RoutedEventArgs e) =>
-        await LoadWinUtilCatalogAsync(forceRefresh: true, showFeedback: true);
+    private async void RefreshWinUtil_Click(
+        object sender,
+        RoutedEventArgs e) =>
+        await LoadWinUtilCatalogAsync(
+            forceRefresh: true,
+            showFeedback: true);
 
     private async Task LoadWinUtilCatalogAsync(
         bool forceRefresh,
@@ -1125,65 +1129,59 @@ public partial class MainWindow : Window
         if (showFeedback)
         {
             BeginActivity(
-                forceRefresh ? "Actualizando WinUtil" : "Cargando WinUtil",
-                "Leyendo el catálogo fijado y preparando las opciones compatibles…");
+                "Actualizando ajustes",
+                "Cargando únicamente opciones sencillas y reversibles…");
         }
 
         try
         {
-            WinUtilStatusText.Text = forceRefresh
-                ? "Actualizando opciones…"
-                : "Cargando opciones…";
+            WinUtilStatusText.Text = "Cargando ajustes…";
 
             var result = await _winUtil.LoadAsync(forceRefresh);
             _winUtilAllTweaks = result.Tweaks;
 
             ApplyWinUtilFilter();
 
-            var applicable = result.Tweaks.Count(x => _winUtilNative.Supports(x.Id));
-            var source = result.FromCache ? "caché local" : "GitHub oficial";
+            var applicable = result.Tweaks.Count(
+                x => _winUtilNative.Supports(x.Id));
 
             WinUtilStatusText.Text =
-                $"{applicable} aplicables · {result.Tweaks.Count} totales · {source}";
+                $"{applicable} ajustes sencillos disponibles";
 
             Log(
-                $"WinUtil cargado: {result.Version}, commit {result.Commit[..12]}, " +
-                $"{applicable} opciones portadas nativamente de {result.Tweaks.Count}.");
+                $"Catálogo WinUtil cargado: {result.Version}, " +
+                $"commit {result.Commit[..12]}. " +
+                $"{applicable} opciones nativas visibles.");
 
             if (showFeedback)
             {
                 EndActivity(
-                    "WinUtil listo",
-                    $"{applicable} opciones se pueden aplicar de forma nativa y reversible.",
+                    "Ajustes actualizados",
+                    $"{applicable} opciones disponibles.",
                     ActivityKind.Success);
 
                 ShowToast(
-                    $"WinUtil: {applicable} opciones listas para aplicar.",
+                    "Ajustes actualizados.",
                     ActivityKind.Success);
             }
         }
         catch (Exception ex)
         {
-            WinUtilStatusText.Text = "No se pudo cargar WinUtil";
+            WinUtilStatusText.Text = "No se pudieron cargar los ajustes";
             Log($"Error cargando catálogo WinUtil: {ex.Message}");
 
             if (showFeedback)
             {
                 EndActivity(
-                    "Error cargando WinUtil",
+                    "No se pudieron cargar los ajustes",
                     ex.Message,
                     ActivityKind.Error);
 
                 ShowToast(
-                    "No se pudo cargar el catálogo. No se ejecutó código remoto.",
+                    "No se pudieron cargar los ajustes.",
                     ActivityKind.Error);
             }
         }
-    }
-
-    private void WinUtilShowAllToggle_Changed(object sender, RoutedEventArgs e)
-    {
-        ApplyWinUtilFilter();
     }
 
     private void ApplyWinUtilFilter()
@@ -1191,13 +1189,9 @@ public partial class MainWindow : Window
         if (WinUtilGrid is null)
             return;
 
-        var showAll = WinUtilShowAllToggle?.IsChecked == true;
-
         var items = _winUtilAllTweaks
-            .Where(x => showAll || _winUtilNative.Supports(x.Id))
-            .OrderByDescending(x => _winUtilNative.Supports(x.Id))
-            .ThenBy(x => x.Category, StringComparer.CurrentCultureIgnoreCase)
-            .ThenBy(x => x.Content, StringComparer.CurrentCultureIgnoreCase)
+            .Where(x => _winUtilNative.Supports(x.Id))
+            .OrderBy(x => x.Content, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
 
         WinUtilGrid.ItemsSource = items;
@@ -1208,111 +1202,83 @@ public partial class MainWindow : Window
             ResetWinUtilDetails();
     }
 
-    private void WinUtilGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void WinUtilGrid_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
     {
         UpdateWinUtilSelection();
     }
 
     private void UpdateWinUtilSelection()
     {
-        if (WinUtilGrid.SelectedItem is not WinUtilTweak tweak)
+        if (WinUtilGrid.SelectedItem is not WinUtilTweak tweak ||
+            !_winUtilNative.Supports(tweak.Id))
         {
             ResetWinUtilDetails();
             return;
         }
 
-        var supported = _winUtilNative.Supports(tweak.Id);
-        var state = supported
-            ? _winUtilNative.GetState(tweak.Id)
-            : "Solo consulta";
+        var state = _winUtilNative.GetState(tweak.Id);
 
         WinUtilSelectedTitleText.Text = tweak.Content;
-        WinUtilSelectedStateText.Text = supported
-            ? $"{state} · Aplicación nativa"
-            : $"{tweak.Risk} · Solo consulta";
-
+        WinUtilSelectedStateText.Text = state;
         WinUtilSelectedDescriptionText.Text = tweak.Description;
-        WinUtilSelectedCategoryText.Text =
-            $"Categoría: {tweak.Category}" +
-            (string.IsNullOrWhiteSpace(tweak.Presets)
-                ? ""
-                : $" · Perfiles WinUtil: {tweak.Presets}");
-
-        WinUtilSelectedImpactText.Text = supported
-            ? GetWinUtilImpactText(tweak.Id)
-            : "Esta opción se muestra para que entiendas qué propone WinUtil. " +
-              "Windows11Optimizer no la ejecutará hasta que exista una implementación nativa, revisada y reversible.";
-
-        WinUtilTechnicalText.Text =
-            $"ID: {tweak.Id}{Environment.NewLine}" +
-            $"Nivel: {tweak.Risk}{Environment.NewLine}" +
-            $"Acciones declaradas: {tweak.Actions}{Environment.NewLine}" +
-            $"Nombre original: {tweak.OriginalContent}";
+        WinUtilSelectedImpactText.Text = GetWinUtilImpactText(tweak.Id);
 
         WinUtilApplyButton.IsEnabled =
-            supported &&
-            !string.Equals(state, "Aplicado", StringComparison.OrdinalIgnoreCase);
+            !string.Equals(
+                state,
+                "Aplicado",
+                StringComparison.OrdinalIgnoreCase);
 
         WinUtilRestoreButton.IsEnabled =
-            supported &&
             _winUtilNative.HasBackup(tweak.Id);
     }
 
     private void ResetWinUtilDetails()
     {
-        WinUtilSelectedTitleText.Text = "Selecciona una opción";
+        WinUtilSelectedTitleText.Text = "Selecciona un ajuste";
         WinUtilSelectedStateText.Text = "Sin seleccionar";
         WinUtilSelectedDescriptionText.Text =
-            "Selecciona una opción de la lista para ver una explicación sencilla.";
+            "Selecciona un ajuste para ver una explicación sencilla.";
         WinUtilSelectedImpactText.Text =
             "No se realizará ningún cambio hasta que pulses Aplicar.";
-        WinUtilSelectedCategoryText.Text = "";
-        WinUtilTechnicalText.Text = "ID, acciones y perfil aparecerán aquí.";
         WinUtilApplyButton.IsEnabled = false;
         WinUtilRestoreButton.IsEnabled = false;
     }
 
-    private void ApplySelectedWinUtil_Click(object sender, RoutedEventArgs e)
+    private void ApplySelectedWinUtil_Click(
+        object sender,
+        RoutedEventArgs e)
     {
         if (WinUtilGrid.SelectedItem is not WinUtilTweak tweak ||
             !_winUtilNative.Supports(tweak.Id))
         {
-            ShowToast(
-                "Esta opción todavía es solo informativa.",
-                ActivityKind.Warning);
             return;
         }
-
-        var answer = MessageBox.Show(
-            $"Se aplicará “{tweak.Content}”.\n\n" +
-            "La app guardará primero el valor actual para que puedas deshacer el cambio. ¿Continuar?",
-            "Aplicar ajuste",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-
-        if (answer != MessageBoxResult.Yes)
-            return;
 
         try
         {
             _winUtilNative.Apply(tweak.Id);
             UpdateWinUtilSelection();
 
-            Log($"WinUtil nativo aplicado: {tweak.Id}");
+            Log($"Ajuste aplicado: {tweak.Id}");
             ShowToast(
                 $"Aplicado: {tweak.Content}.",
                 ActivityKind.Success);
         }
         catch (Exception ex)
         {
-            Log($"Error aplicando WinUtil nativo {tweak.Id}: {ex.Message}");
+            Log($"Error aplicando ajuste {tweak.Id}: {ex.Message}");
             ShowToast(
                 "No se pudo aplicar este ajuste.",
                 ActivityKind.Error);
         }
     }
 
-    private void RestoreSelectedWinUtil_Click(object sender, RoutedEventArgs e)
+    private void RestoreSelectedWinUtil_Click(
+        object sender,
+        RoutedEventArgs e)
     {
         if (WinUtilGrid.SelectedItem is not WinUtilTweak tweak ||
             !_winUtilNative.Supports(tweak.Id))
@@ -1325,14 +1291,14 @@ public partial class MainWindow : Window
             _winUtilNative.Restore(tweak.Id);
             UpdateWinUtilSelection();
 
-            Log($"WinUtil nativo restaurado: {tweak.Id}");
+            Log($"Ajuste restaurado: {tweak.Id}");
             ShowToast(
                 $"Cambio deshecho: {tweak.Content}.",
                 ActivityKind.Success);
         }
         catch (Exception ex)
         {
-            Log($"Error restaurando WinUtil nativo {tweak.Id}: {ex.Message}");
+            Log($"Error restaurando ajuste {tweak.Id}: {ex.Message}");
             ShowToast(
                 "No se pudo deshacer este ajuste.",
                 ActivityKind.Error);
@@ -1342,24 +1308,22 @@ public partial class MainWindow : Window
     private static string GetWinUtilImpactText(string id) => id switch
     {
         "WPFToggleShowExt" =>
-            "Hace visibles extensiones como .exe, .jpg o .txt en el Explorador de archivos. " +
-            "Solo cambia una preferencia del usuario actual.",
+            "Muestra terminaciones como .exe, .jpg o .txt en el Explorador. No modifica tus archivos.",
 
         "WPFToggleHiddenFiles" =>
-            "Permite ver archivos y carpetas marcados como ocultos. " +
-            "No elimina ni modifica esos archivos.",
+            "Permite ver archivos y carpetas ocultos. No elimina ni cambia su contenido.",
 
         "WPFTweaksEndTaskOnTaskbar" =>
-            "Añade “Finalizar tarea” al menú del clic derecho de las aplicaciones en la barra de tareas.",
+            "Añade la opción para cerrar una aplicación desde la barra de tareas cuando deje de responder.",
 
         "WPFToggleTaskbarSearch" =>
-            "Muestra el acceso a Búsqueda en la barra de tareas. Puedes deshacerlo para recuperar tu estado anterior.",
+            "Muestra el acceso a la búsqueda en la barra de tareas.",
 
         "WPFToggleDarkMode" =>
-            "Activa el tema oscuro de Windows y de aplicaciones compatibles para el usuario actual.",
+            "Activa el tema oscuro de Windows para el usuario actual.",
 
         _ =>
-            "Cambia una preferencia del usuario actual y conserva una copia del valor anterior."
+            "Cambia una preferencia sencilla y guarda el valor anterior para poder deshacerla."
     };
 
     private void DarkModeToggle_Checked(object sender, RoutedEventArgs e)
