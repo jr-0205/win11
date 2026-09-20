@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private readonly BackupService _backup = new();
     private readonly StartupInventoryService _startup = new();
     private readonly WinUtilCatalogService _winUtil = new();
+    private readonly VirtualizationModeService _virtualization = new();
     private readonly ThemeService _theme = new();
     private readonly OptimizationService _optimizer;
     private readonly DiagnosticReportService _diagnostics;
@@ -63,6 +64,7 @@ public partial class MainWindow : Window
         RefreshBackupStatus();
         RefreshStartup();
         await RefreshServicesAsync();
+        await RefreshVirtualizationAsync();
         await RefreshMetricsAsync();
 
         _timer.Start();
@@ -350,6 +352,208 @@ public partial class MainWindow : Window
         }
 
         return service;
+    }
+
+    private async Task RefreshVirtualizationAsync()
+    {
+        try
+        {
+            var state = await _virtualization.GetStateAsync();
+
+            VirtualizationBootModeText.Text =
+                state.HypervisorLaunchType.Equals("Off", StringComparison.OrdinalIgnoreCase)
+                    ? "VMware directo · OFF"
+                    : "Normal · AUTO";
+
+            VirtualizationCurrentText.Text =
+                state.HypervisorPresentNow
+                    ? "Activo en esta sesión"
+                    : "No detectado en esta sesión";
+
+            VirtualizationBackupText.Text =
+                _virtualization.BackupExists
+                    ? "Disponible"
+                    : "Aún no creado";
+        }
+        catch (Exception ex)
+        {
+            VirtualizationBootModeText.Text = "No disponible";
+            VirtualizationCurrentText.Text = "No disponible";
+            VirtualizationBackupText.Text =
+                _virtualization.BackupExists ? "Disponible" : "Aún no creado";
+
+            Log($"Error leyendo virtualización: {ex.Message}");
+        }
+    }
+
+    private async void SetVirtualizationNormal_Click(object sender, RoutedEventArgs e)
+    {
+        var answer = MessageBox.Show(
+            "Se configurará hypervisorlaunchtype=auto para el próximo arranque.\n\n" +
+            "El cambio no se aplicará hasta reiniciar Windows. ¿Continuar?",
+            "Modo Normal",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes)
+        {
+            ShowToast("Cambio de virtualización cancelado.", ActivityKind.Info);
+            return;
+        }
+
+        await RunVirtualizationOperationAsync(
+            "Configurando modo Normal",
+            "Guardando el valor original y estableciendo hypervisorlaunchtype=auto…",
+            () => _virtualization.SetNormalAsync());
+    }
+
+    private async void SetVirtualizationVmware_Click(object sender, RoutedEventArgs e)
+    {
+        var answer = MessageBox.Show(
+            "Se configurará hypervisorlaunchtype=off para el próximo arranque.\n\n" +
+            "Mientras esté en OFF, Hyper-V y otras funciones que dependan del hipervisor " +
+            "de Windows pueden no estar disponibles.\n\n¿Continuar?",
+            "Modo VMware directo",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (answer != MessageBoxResult.Yes)
+        {
+            ShowToast("Cambio de virtualización cancelado.", ActivityKind.Info);
+            return;
+        }
+
+        await RunVirtualizationOperationAsync(
+            "Configurando modo VMware directo",
+            "Guardando el valor original y estableciendo hypervisorlaunchtype=off…",
+            () => _virtualization.SetVmwareDirectAsync());
+    }
+
+    private async void RestoreVirtualization_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_virtualization.BackupExists)
+        {
+            ShowToast(
+                "No existe todavía un backup de la configuración de virtualización.",
+                ActivityKind.Warning);
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            "Se restaurará el valor de hypervisorlaunchtype que existía antes del primer cambio realizado por la app.\n\n¿Continuar?",
+            "Restaurar virtualización",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        await RunVirtualizationOperationAsync(
+            "Restaurando virtualización",
+            "Restaurando el valor original guardado…",
+            () => _virtualization.RestoreAsync());
+    }
+
+    private async void RefreshVirtualization_Click(object sender, RoutedEventArgs e)
+    {
+        BeginActivity(
+            "Actualizando virtualización",
+            "Consultando BCD y el estado actual del hipervisor…");
+
+        try
+        {
+            await RefreshVirtualizationAsync();
+
+            EndActivity(
+                "Virtualización actualizada",
+                "Se volvió a consultar la configuración de arranque.",
+                ActivityKind.Success);
+
+            ShowToast(
+                "Estado de virtualización actualizado.",
+                ActivityKind.Success);
+        }
+        catch (Exception ex)
+        {
+            EndActivity(
+                "Error actualizando virtualización",
+                ex.Message,
+                ActivityKind.Error);
+
+            ShowToast(
+                "No se pudo actualizar la virtualización.",
+                ActivityKind.Error);
+        }
+    }
+
+    private async void RestartForVirtualization_Click(object sender, RoutedEventArgs e)
+    {
+        var answer = MessageBox.Show(
+            "Windows se reiniciará inmediatamente. Guarda cualquier trabajo abierto antes de continuar.\n\n¿Reiniciar ahora?",
+            "Reiniciar Windows",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        Log("Reinicio solicitado para aplicar la configuración de virtualización.");
+        ShowToast("Reiniciando Windows…", ActivityKind.Warning);
+
+        try
+        {
+            await VirtualizationModeService.RestartWindowsAsync();
+        }
+        catch (Exception ex)
+        {
+            Log($"Error solicitando reinicio: {ex.Message}");
+            ShowToast("Windows no aceptó el reinicio.", ActivityKind.Error);
+        }
+    }
+
+    private async Task RunVirtualizationOperationAsync(
+        string title,
+        string detail,
+        Func<Task> operation)
+    {
+        BeginActivity(title, detail);
+
+        try
+        {
+            Log(title + "…");
+            await operation();
+            await RefreshVirtualizationAsync();
+
+            EndActivity(
+                title + ": preparado",
+                "El cambio se aplicará después de reiniciar Windows.",
+                ActivityKind.Success);
+
+            ShowToast(
+                "Configuración actualizada. Reinicia Windows para aplicarla.",
+                ActivityKind.Success);
+
+            Log(title + ": configuración guardada. Reinicio pendiente.");
+        }
+        catch (Exception ex)
+        {
+            Log($"ERROR virtualización: {ex.Message}");
+
+            EndActivity(
+                title + ": error",
+                ex.Message,
+                ActivityKind.Error);
+
+            ShowToast(
+                "No se pudo cambiar la configuración de virtualización.",
+                ActivityKind.Error);
+
+            MessageBox.Show(
+                ex.Message,
+                title,
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private async Task RunOperationAsync(
