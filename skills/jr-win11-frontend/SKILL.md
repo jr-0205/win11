@@ -1676,3 +1676,159 @@ No considerar terminado el frontend si existe cualquiera de estos casos:
 - texto técnico sin explicación en una pantalla para usuario normal.
 
 Estos fallos son **release blockers de UI**.
+
+
+---
+
+# 36. MÓDULO — OPTIMIZACIÓN INTELIGENTE Y SIMPLIFICACIÓN
+
+Este módulo define la experiencia principal de Windows11Optimizer.
+
+## 36.1 No exponer un administrador genérico de servicios
+
+La aplicación no debe pedir al usuario normal que decida entre:
+
+- Automatic;
+- Manual;
+- Disabled;
+- Start;
+- Stop;
+- nombres internos de servicios.
+
+Los servicios son implementación interna.
+
+La UI debe hablar de:
+
+- Utilidades Acer;
+- Docker;
+- VMware;
+- componentes en segundo plano;
+- disponibles cuando se necesiten.
+
+## 36.2 Política de optimización
+
+La optimización recomendada no debe deshabilitar funciones.
+
+Para componentes explícitamente aprobados por la allowlist:
+
+- preferir inicio Manual;
+- mantenerlos disponibles para que una aplicación pueda iniciarlos;
+- no forzar el cierre de un componente que ya está funcionando;
+- conservar backup del estado anterior;
+- permitir restauración.
+
+No usar Disabled como estrategia normal de optimización.
+
+## 36.3 Actividades programadas
+
+No asumir que una tarea programada tiene un equivalente universal a "Manual".
+
+La optimización inteligente debe:
+
+- detectar tareas conocidas;
+- explicar su presencia;
+- conservarlas si no existe una estrategia específica, reversible y probada;
+- no deshabilitarlas automáticamente solo para reducir procesos.
+
+Si en el futuro se administra una tarea, debe hacerse mediante una política específica para esa tarea y con restauración exacta.
+
+## 36.4 Optimización inteligente
+
+El flujo es:
+
+1. analizar;
+2. clasificar;
+3. mostrar recomendaciones;
+4. aplicar solo las aprobadas;
+5. volver a analizar;
+6. mostrar el resultado;
+7. permitir deshacer.
+
+El análisis puede considerar:
+
+- servicios de la allowlist;
+- programas de inicio;
+- entradas huérfanas;
+- Autoruns;
+- procesos;
+- actividades programadas conocidas;
+- estado de virtualización.
+
+Nunca convertir una detección desconocida en un cambio automático.
+
+## 36.5 Máquinas virtuales
+
+La vista normal debe ofrecer únicamente dos decisiones principales:
+
+### Windows y Docker
+
+Prioriza:
+
+- Docker Desktop;
+- WSL2;
+- Windows Sandbox;
+- Hyper-V y funciones equivalentes;
+- funciones de seguridad de Windows que dependan de su virtualización.
+
+Los componentes VMware pueden permanecer disponibles bajo demanda, pero no deben forzarse a iniciar con Windows.
+
+### VMware
+
+Prioriza:
+
+- VMware;
+- máquinas virtuales;
+- compatibilidad con virtualización anidada cuando el modo de virtualización de Windows interfiera.
+
+Al seleccionar VMware:
+
+- preparar internamente los servicios necesarios;
+- no pedir al usuario que administre cada servicio;
+- conservar los componentes opcionales en modo bajo demanda cuando sea posible.
+
+Información como:
+
+- hypervisorlaunchtype;
+- VBS;
+- HVCI;
+- nombres internos de servicios;
+
+debe permanecer en Información técnica.
+
+## 36.6 Ajustes
+
+La pantalla de ajustes no debe mostrar el catálogo completo de WinUtil.
+
+Mostrar solo opciones:
+
+- portadas nativamente;
+- reversibles;
+- probadas;
+- comprensibles para un usuario normal.
+
+El catálogo completo puede permanecer como fuente interna de referencia, pero no como interfaz de usuario.
+
+## 36.7 Regla de lenguaje
+
+Evitar en la interfaz principal:
+
+- service;
+- task;
+- trigger;
+- registry;
+- BCD;
+- VBS;
+- HVCI;
+- automatic/manual/disabled;
+- nombres internos.
+
+Preferir:
+
+- disponible cuando se necesite;
+- se inicia con Windows;
+- actividad programada;
+- modo Windows y Docker;
+- modo VMware;
+- volver al estado anterior.
+
+Los términos técnicos pueden aparecer únicamente en una sección secundaria de información técnica.
