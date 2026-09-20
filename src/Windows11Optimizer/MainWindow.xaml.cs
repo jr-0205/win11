@@ -260,7 +260,7 @@ public partial class MainWindow : Window
             _safeActions.HasBackup(row.ActionId);
     }
 
-    private void ApplyAiRecommendation_Click(object sender, RoutedEventArgs e)
+    private async void ApplyAiRecommendation_Click(object sender, RoutedEventArgs e)
     {
         if (AiRecommendationGrid.SelectedItem is not AiRecommendationRow row)
             return;
@@ -288,7 +288,7 @@ public partial class MainWindow : Window
 
         try
         {
-            _safeActions.Apply(row.ActionId);
+            await _safeActions.ApplyAsync(row.ActionId);
             Log($"Ajuste seguro aplicado: {row.ActionId}");
             AiRecommendationGrid_SelectionChanged(
                 AiRecommendationGrid,
@@ -306,14 +306,14 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RevertAiRecommendation_Click(object sender, RoutedEventArgs e)
+    private async void RevertAiRecommendation_Click(object sender, RoutedEventArgs e)
     {
         if (AiRecommendationGrid.SelectedItem is not AiRecommendationRow row)
             return;
 
         try
         {
-            _safeActions.Revert(row.ActionId);
+            await _safeActions.RevertAsync(row.ActionId);
             Log($"Ajuste seguro restaurado: {row.ActionId}");
             AiRecommendationGrid_SelectionChanged(
                 AiRecommendationGrid,
