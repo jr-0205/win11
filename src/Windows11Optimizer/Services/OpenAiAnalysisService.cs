@@ -7,6 +7,45 @@ using Windows11Optimizer.Profiles;
 
 namespace Windows11Optimizer.Services;
 
+public sealed class OpenAiApiException : Exception
+{
+    public OpenAiApiException(
+        int statusCode,
+        string message,
+        string errorCode = "",
+        string errorType = "")
+        : base(message)
+    {
+        StatusCode = statusCode;
+        ErrorCode = errorCode;
+        ErrorType = errorType;
+    }
+
+    public int StatusCode { get; }
+    public string ErrorCode { get; }
+    public string ErrorType { get; }
+
+    public bool IsQuotaOrCreditsError =>
+        StatusCode == 429 &&
+        (
+            ErrorCode.Equals(
+                "insufficient_quota",
+                StringComparison.OrdinalIgnoreCase) ||
+            ErrorType.Equals(
+                "insufficient_quota",
+                StringComparison.OrdinalIgnoreCase) ||
+            Message.Contains(
+                "credit",
+                StringComparison.OrdinalIgnoreCase) ||
+            Message.Contains(
+                "quota",
+                StringComparison.OrdinalIgnoreCase)
+        );
+
+    public bool IsRateLimitError =>
+        StatusCode == 429 && !IsQuotaOrCreditsError;
+}
+
 public sealed class OpenAiAnalysisService
 {
     private static readonly HttpClient Http = new()
@@ -236,9 +275,13 @@ public sealed class OpenAiAnalysisService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException(
-                $"OpenAI devolvió {(int)response.StatusCode}. " +
-                ExtractErrorMessage(body));
+            var error = ExtractError(body);
+
+            throw new OpenAiApiException(
+                (int)response.StatusCode,
+                error.Message,
+                error.Code,
+                error.Type);
         }
 
         return ExtractOutputText(body);
@@ -287,22 +330,43 @@ public sealed class OpenAiAnalysisService
             "OpenAI no devolvió texto estructurado.");
     }
 
-    private static string ExtractErrorMessage(string body)
+    private static (string Message, string Code, string Type) ExtractError(
+        string body)
     {
         try
         {
             using var doc = JsonDocument.Parse(body);
-            if (doc.RootElement.TryGetProperty("error", out var error) &&
-                error.TryGetProperty("message", out var message))
+
+            if (doc.RootElement.TryGetProperty("error", out var error))
             {
-                return message.GetString() ?? "Error de API.";
+                var message =
+                    error.TryGetProperty("message", out var messageNode)
+                        ? messageNode.GetString() ?? "Error de API."
+                        : "Error de API.";
+
+                var code =
+                    error.TryGetProperty("code", out var codeNode) &&
+                    codeNode.ValueKind != JsonValueKind.Null
+                        ? codeNode.GetString() ?? ""
+                        : "";
+
+                var type =
+                    error.TryGetProperty("type", out var typeNode) &&
+                    typeNode.ValueKind != JsonValueKind.Null
+                        ? typeNode.GetString() ?? ""
+                        : "";
+
+                return (message, code, type);
             }
         }
         catch
         {
         }
 
-        return "No se pudo completar el análisis.";
+        return (
+            "No se pudo completar el análisis.",
+            "",
+            "");
     }
 
     private static JsonSerializerOptions JsonOptions() =>
