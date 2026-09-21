@@ -17,15 +17,10 @@ La prioridad del proyecto es la reversibilidad: antes de modificar servicios adm
 - VMware bajo demanda:
   - `VMnetDHCP`
   - `VMware NAT Service`
-- Utilidades Acer bajo demanda:
-  - `AcerCCAgentSvis`
-  - `AcerDIAgentSvis`
-  - `AcerEZSvc`
-- Protección explícita de componentes Acer que pueden intervenir en funciones del portátil:
-  - `AcerDeviceEnablingServiceV2`
-  - `AcerQAAgentSvis`
-  - `ASMSvc`
-  - `AcerServiceSvc`
+- Compatibilidad conservadora con utilidades conocidas del fabricante:
+  - solo se administran componentes presentes en allowlists internas;
+  - un componente desconocido se conserva;
+  - si una utilidad no existe en ese equipo, se ignora.
 - Inventario de programas registrados para iniciar con Windows.
 - Acceso directo a la pantalla oficial de Apps de inicio.
 - Exportación de diagnóstico a TXT.
@@ -70,7 +65,7 @@ No desactiva:
 - Bluetooth
 - Touchpad/entrada de texto
 - AMD Graphics
-- Acer Quick Access / servicios Acer protegidos
+- utilidades conocidas del fabricante y componentes protegidos
 
 El objetivo no es conseguir el menor número posible de procesos a cualquier costo. El objetivo es reducir actividad innecesaria manteniendo las funciones útiles del equipo.
 
@@ -170,7 +165,7 @@ Cuando se pulsa **Iniciar VMware**:
 
 Al terminar, se puede volver a detener desde la aplicación.
 
-El mismo concepto se aplica a las utilidades Acer seleccionadas.
+El mismo concepto se aplica a las utilidades conocidas del fabricante que estén presentes en ese equipo.
 
 ## Backup
 
@@ -281,7 +276,7 @@ La interfaz principal se simplificó para que el usuario no tenga que administra
 El módulo inteligente:
 
 - analiza únicamente componentes conocidos por una allowlist;
-- detecta utilidades Acer, VMware y Docker que se inician siempre con Windows;
+- detecta utilidades conocidas del fabricante, VMware y Docker que se inician siempre con Windows;
 - recomienda dejarlos disponibles para que una aplicación los inicie cuando los necesite;
 - usa inicio Manual en lugar de Disabled;
 - no fuerza el cierre de componentes que ya están funcionando;
@@ -450,3 +445,49 @@ Cambios principales:
 El agente continúa siendo WinForms/`asInvoker` y no carga WPF UI durante el inicio de Windows.
 
 La lógica Docker ↔ VMware no fue modificada por esta renovación visual.
+
+
+## Navegación y distribución v0.9
+
+La interfaz usa ahora una navegación lateral persistente:
+
+- **Inicio**: estado general y acceso rápido a Focus Boost.
+- **Optimizar**: examen local, IA opcional y cambios seguros.
+- **Virtualización**: selector Windows/Docker ↔ VMware.
+- **Aplicaciones**: inicio, desinstalación registrada y residuos confirmados.
+- **Ajustes**: preferencias reversibles.
+- **Diagnóstico**: registro técnico.
+
+### IA opcional
+
+El examen local funciona sin Internet ni API.
+
+Si OpenAI devuelve falta de saldo, límite temporal o no existe una clave configurada:
+
+- la app no lo trata como fallo del optimizador;
+- ejecuta o mantiene disponible el examen local;
+- no aplica cambios automáticamente;
+- muestra un mensaje comprensible en lugar de un error HTTP crudo.
+
+### Hardware agnóstico
+
+Windows11Optimizer no supone que el equipo sea de una marca concreta.
+
+Las compatibilidades por fabricante son allowlists internas y conservadoras:
+
+- solo actúan cuando el componente existe;
+- no se aplican a servicios desconocidos;
+- la interfaz y los reportes usan nombres genéricos;
+- en otro fabricante, las reglas no aplicables simplemente se omiten.
+
+### Distribución
+
+`exe-generated.ps1` produce una publicación x64 self-contained:
+
+- `Windows11Optimizer.exe`
+- `Windows11Optimizer.Agent.exe`
+- `Windows11Optimizer-Portable-win-x64.zip`
+
+El ZIP puede copiarse a otra PC con Windows 11 x64 sin instalar el SDK de .NET.
+
+La API de OpenAI no es requisito para usar el programa. Cada usuario configura su propia `OPENAI_API_KEY` únicamente si desea las funciones de IA.
