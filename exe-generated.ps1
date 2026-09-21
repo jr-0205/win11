@@ -18,6 +18,7 @@ $PublishDir = Join-Path $Artifacts "publish"
 $MainPublishDir = Join-Path $PublishDir "main"
 $AgentPublishDir = Join-Path $PublishDir "agent"
 $PortableDir = Join-Path $Artifacts "portable"
+$PortableZip = Join-Path $Artifacts "Windows11Optimizer-Portable-win-x64.zip"
 $InstallerDir = Join-Path $Artifacts "installer"
 $IssFile = Join-Path $Root "installer\Windows11Optimizer.iss"
 
@@ -179,10 +180,47 @@ Copy-Item $agentExe (Join-Path $PortableDir "Windows11Optimizer.Agent.exe") -For
 Copy-Item (Join-Path $Root "LICENSE") (Join-Path $PortableDir "LICENSE.txt") -Force
 Copy-Item (Join-Path $Root "THIRD-PARTY-NOTICES.md") (Join-Path $PortableDir "THIRD-PARTY-NOTICES.md") -Force
 
+$portableReadme = @"
+WINDOWS 11 OPTIMIZER - PORTABLE
+
+Contenido:
+- Windows11Optimizer.exe: interfaz principal.
+- Windows11Optimizer.Agent.exe: agente ligero de bandeja y hotkeys.
+
+Requisitos:
+- Windows 11 x64.
+- No requiere instalar .NET: esta publicación es self-contained.
+- Algunas acciones del sistema solicitan permisos de administrador.
+- La IA es opcional. El examen local funciona sin Internet ni API key.
+
+Uso:
+1. Extrae todo el ZIP en una carpeta.
+2. Ejecuta Windows11Optimizer.exe.
+3. No separes los dos EXE si quieres usar Mini Focus y hotkeys.
+
+Privacidad:
+- No incluye claves API.
+- Cada usuario configura OPENAI_API_KEY en su propio equipo si desea usar IA.
+- Docker/VMware y las optimizaciones dependen de lo que realmente esté instalado en cada PC.
+
+Proyecto:
+https://github.com/jr-0205/win11
+"@
+
+Set-Content -Path (Join-Path $PortableDir "LEEME-PORTABLE.txt") -Value $portableReadme -Encoding UTF8
+
+if (Test-Path $PortableZip) {
+    Remove-Item $PortableZip -Force
+}
+
+Compress-Archive -Path (Join-Path $PortableDir "*") -DestinationPath $PortableZip -CompressionLevel Optimal
+
 Write-Host ""
 Write-Host "Portable generado:" -ForegroundColor Green
 Write-Host "  $(Join-Path $PortableDir 'Windows11Optimizer.exe')"
 Write-Host "  $(Join-Path $PortableDir 'Windows11Optimizer.Agent.exe')"
+Write-Host "ZIP distribuible:"
+Write-Host "  $PortableZip"
 
 if ($PortableOnly) {
     Write-Host ""
