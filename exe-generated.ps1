@@ -248,7 +248,7 @@ if (-not $iscc -and $InstallInno) {
 if (-not $iscc) {
     Write-Host ""
     Write-Host "No se encontró Inno Setup 6." -ForegroundColor Yellow
-    Write-Host "El EXE portable ya está listo."
+    Write-Host "El paquete portable ya está listo."
     Write-Host ""
     Write-Host "Para crear también el instalador:"
     Write-Host "  1) Instala Inno Setup 6"
@@ -275,5 +275,7 @@ Write-Host "LISTO" -ForegroundColor Green
 Write-Host "Portable:"
 Write-Host "  $(Join-Path $PortableDir 'Windows11Optimizer.exe')"
 Write-Host "  $(Join-Path $PortableDir 'Windows11Optimizer.Agent.exe')"
+Write-Host "ZIP distribuible:"
+Write-Host "  $PortableZip"
 Write-Host "Instalador:"
 Write-Host "  $setup"
