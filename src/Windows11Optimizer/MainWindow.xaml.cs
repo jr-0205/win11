@@ -159,8 +159,8 @@ public partial class MainWindow : Window
         MetricsGrid.Columns = compact ? 2 : 4;
         VirtualizationStatusGrid.Columns = compact ? 1 : 2;
         NavigationColumn.Width = compact
-            ? new GridLength(148)
-            : new GridLength(188);
+            ? new GridLength(170)
+            : new GridLength(202);
         ActivityProgress.Width = compact ? 120 : 180;
     }
 
