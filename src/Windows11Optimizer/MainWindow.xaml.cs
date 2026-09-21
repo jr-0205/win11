@@ -182,18 +182,22 @@ public partial class MainWindow : Window
     private void UpdateAiAvailability()
     {
         AiExamStatusText.Text = _openAi.IsConfigured
-            ? $"OpenAI listo · modelo {_openAi.Model}. La IA solo puede elegir acciones del catálogo seguro."
-            : "IA no configurada. Define OPENAI_API_KEY en Windows; la clave no se guarda en el proyecto.";
+            ? $"IA opcional configurada · modelo {_openAi.Model}. La disponibilidad también depende del saldo de la API."
+            : "IA opcional no configurada. El examen local funciona sin clave, Internet ni saldo de API.";
     }
 
     private async void RunAiExam_Click(object sender, RoutedEventArgs e)
     {
         if (!_openAi.IsConfigured)
         {
-            UpdateAiAvailability();
+            await RunLocalExamFallbackAsync(
+                "La IA opcional no está configurada. " +
+                "Se ejecutó el examen local seguro en su lugar.");
+
             ShowToast(
-                "Configura OPENAI_API_KEY para usar el examen con IA.",
-                ActivityKind.Warning);
+                "Examen local completado. Puedes configurar la IA más adelante si quieres.",
+                ActivityKind.Info);
+
             return;
         }
 
@@ -645,9 +649,36 @@ public partial class MainWindow : Window
 
             AppAiExplanationText.Text = explanation.DisplayText;
         }
+        catch (OpenAiApiException ex) when (ex.IsQuotaOrCreditsError)
+        {
+            AppAiExplanationText.Text =
+                "La clave de OpenAI funciona, pero la cuenta de API no tiene saldo disponible." +
+                Environment.NewLine + Environment.NewLine +
+                "Datos locales disponibles:" + Environment.NewLine +
+                $"• Aplicación: {app.DisplayName}" + Environment.NewLine +
+                $"• Versión: {app.VersionDisplay}" + Environment.NewLine +
+                $"• Editor: {app.PublisherDisplay}" + Environment.NewLine +
+                "No se realizó ningún cambio.";
+        }
+        catch (OpenAiApiException ex) when (ex.IsRateLimitError)
+        {
+            AppAiExplanationText.Text =
+                "OpenAI está limitando temporalmente las solicitudes. " +
+                "Puedes volver a intentarlo más tarde. Ningún cambio fue realizado.";
+        }
+        catch (OpenAiApiException)
+        {
+            AppAiExplanationText.Text =
+                "La explicación con IA no está disponible ahora. " +
+                "Puedes seguir administrando esta aplicación con las funciones locales.";
+        }
         catch (Exception ex)
         {
-            AppAiExplanationText.Text = ex.Message;
+            AppAiExplanationText.Text =
+                "No se pudo obtener la explicación con IA. " +
+                "Las funciones locales siguen disponibles." +
+                Environment.NewLine + Environment.NewLine +
+                ex.Message;
         }
     }
 
@@ -2230,11 +2261,37 @@ public partial class MainWindow : Window
 
     private void Log(string message)
     {
+        message = SanitizeTechnicalText(message);
+
         Dispatcher.Invoke(() =>
         {
-            LogBox.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
+            LogBox.AppendText(
+                $"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
             LogBox.ScrollToEnd();
         });
+    }
+
+    private static string SanitizeTechnicalText(string message)
+    {
+        var sanitized = message;
+
+        foreach (var serviceName in SafeProfile.AcerOnDemandServices)
+        {
+            sanitized = sanitized.Replace(
+                serviceName,
+                "componente del fabricante",
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        foreach (var serviceName in SafeProfile.AcerProtectedServices)
+        {
+            sanitized = sanitized.Replace(
+                serviceName,
+                "componente protegido del fabricante",
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        return sanitized;
     }
 
     private static bool IsAdministrator()
