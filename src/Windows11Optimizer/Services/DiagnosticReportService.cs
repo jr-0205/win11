@@ -49,7 +49,7 @@ public sealed class DiagnosticReportService
         }
         foreach (var name in SafeProfile.AcerOnDemandServices)
         {
-            var info = _services.GetInfo(name, "Acer", "Bajo demanda");
+            var info = _services.GetInfo(name, "Fabricante", "Bajo demanda");
             if (info is not null) sb.AppendLine($"{info.Name}: {info.State} / {info.StartMode}");
         }
 
