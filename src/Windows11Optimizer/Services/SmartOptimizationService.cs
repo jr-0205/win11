@@ -25,9 +25,9 @@ public sealed class SmartOptimizationService
 
         AddServiceGroup(
             items,
-            id: "acer",
-            title: "Utilidades Acer",
-            category: "Aplicaciones del fabricante",
+            id: "known-oem",
+            title: "Utilidades del fabricante",
+            category: "Fabricante del equipo",
             names: SafeProfile.AcerOnDemandServices,
             readyText: "Ya están disponibles solo cuando una aplicación las necesita.");
 
@@ -81,7 +81,7 @@ public sealed class SmartOptimizationService
             Title = "Actividades programadas",
             Category = "Mantenimiento",
             Status = enabledTaskCount == 0
-                ? "No encontramos actividades Acer activas de este grupo."
+                ? "No encontramos actividades conocidas del fabricante activas."
                 : $"{enabledTaskCount} actividades Acer siguen disponibles.",
             Action =
                 "Se conservan sin cambios para no quitar funciones. " +
