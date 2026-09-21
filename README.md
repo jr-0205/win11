@@ -491,3 +491,31 @@ Las compatibilidades por fabricante son allowlists internas y conservadoras:
 El ZIP puede copiarse a otra PC con Windows 11 x64 sin instalar el SDK de .NET.
 
 La API de OpenAI no es requisito para usar el programa. Cada usuario configura su propia `OPENAI_API_KEY` únicamente si desea las funciones de IA.
+
+
+## Navegación refinada v0.9.1
+
+La navegación fue reorganizada para que cada nombre corresponda exactamente con el contenido que abre.
+
+Secciones visibles:
+
+- **Resumen**: métricas y estado general.
+- **Optimización**: examen local, recomendaciones seguras e IA opcional.
+- **Focus Boost**: rendimiento temporal por proceso.
+- **Virtualización**: selector Windows/Docker ↔ VMware.
+- **Inicio de Windows**: programas de autoarranque y Autoruns.
+- **Programas instalados**: inventario, desinstalación registrada y referencias antiguas.
+- **Ajustes de Windows**: cambios sencillos y reversibles.
+- **Registro técnico**: log interno para diagnóstico.
+
+También se redujo la densidad visual:
+
+- Focus Boost salió de Resumen y obtuvo su propia sección;
+- el asistente con IA quedó plegado por defecto;
+- Autoruns y opciones de limpieza quedaron como herramientas avanzadas;
+- la explicación con IA de programas quedó plegada;
+- riesgo y reversión de ajustes quedaron en un bloque desplegable;
+- el menú lateral se agrupó por propósito;
+- se aumentó el ancho responsive del menú para evitar títulos cortados.
+
+La lógica Docker ↔ VMware no cambió.
