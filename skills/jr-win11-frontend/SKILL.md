@@ -1699,7 +1699,7 @@ Los servicios son implementación interna.
 
 La UI debe hablar de:
 
-- Utilidades Acer;
+- utilidades conocidas del fabricante;
 - Docker;
 - VMware;
 - componentes en segundo plano;
@@ -2058,3 +2058,67 @@ Antes de aceptar un proceso como objetivo:
 - nunca elevar a High o Realtime.
 
 Esta validación debe ejecutarse tanto al mostrar candidatos como inmediatamente antes de aplicar Focus Boost.
+
+
+## 37.10 Navegación principal y distribución genérica
+
+La navegación principal debe permanecer corta y estable:
+
+- Inicio;
+- Optimizar;
+- Virtualización;
+- Aplicaciones;
+- Ajustes;
+- Diagnóstico.
+
+Preferir navegación lateral persistente cuando la cantidad de funciones hace difícil recorrer tabs horizontales.
+
+La aplicación visible al usuario no debe asumir:
+
+- marca concreta del portátil;
+- nombre del usuario;
+- rutas personales fijas;
+- universidad, equipo o entorno del desarrollador.
+
+Las compatibilidades OEM pueden existir únicamente como allowlists internas y deben mostrarse como **utilidades del fabricante**.
+
+En equipos donde una regla no aplique:
+
+- omitirla;
+- no sugerir instalarla;
+- no mostrar nombres de servicios ausentes en la UI normal;
+- conservar componentes desconocidos.
+
+## 37.11 IA opcional y fallback local
+
+El análisis local es la ruta base.
+
+La IA es una mejora opcional.
+
+Si ocurre:
+
+- API key ausente;
+- HTTP 429 por saldo;
+- HTTP 429 por rate limit;
+- error de red o API;
+
+la app debe seguir siendo completamente navegable y útil.
+
+Para falta de saldo:
+
+- explicar que la clave puede ser válida pero la cuenta API no tiene saldo;
+- no mostrar el error HTTP crudo como mensaje principal;
+- usar el análisis local como fallback;
+- no aplicar acciones automáticamente.
+
+## 37.12 Entrega portable
+
+La publicación distribuible debe:
+
+- ser self-contained;
+- incluir app principal y agente;
+- no contener claves API;
+- no contener rutas del desarrollador;
+- incluir instrucciones genéricas;
+- poder comprimirse como ZIP portable;
+- indicar claramente el sistema/arquitectura soportados.
