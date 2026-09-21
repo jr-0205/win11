@@ -72,7 +72,7 @@
                     BorderThickness="1">
                 <DockPanel LastChildFill="True">
                     <StackPanel DockPanel.Dock="Top">
-                        <TextBlock Text="Secciones"
+                        <TextBlock Text="Navegación"
                                    Margin="8,4,8,8"
                                    FontSize="12"
                                    FontWeight="SemiBold"
@@ -81,33 +81,43 @@
                         <RadioButton x:Name="NavHome"
                                      GroupName="MainNavigation"
                                      Tag="0"
-                                     Content="Inicio"
+                                     Content="Resumen"
                                      IsChecked="True"
                                      Checked="NavigationButton_Checked"
                                      Style="{StaticResource SidebarNavRadioButtonStyle}"/>
                         <RadioButton GroupName="MainNavigation"
                                      Tag="1"
-                                     Content="Optimizar"
+                                     Content="Optimización"
                                      Checked="NavigationButton_Checked"
                                      Style="{StaticResource SidebarNavRadioButtonStyle}"/>
                         <RadioButton GroupName="MainNavigation"
                                      Tag="2"
-                                     Content="Virtualización"
+                                     Content="Focus Boost"
                                      Checked="NavigationButton_Checked"
                                      Style="{StaticResource SidebarNavRadioButtonStyle}"/>
                         <RadioButton GroupName="MainNavigation"
                                      Tag="3"
-                                     Content="Aplicaciones"
+                                     Content="Virtualización"
                                      Checked="NavigationButton_Checked"
                                      Style="{StaticResource SidebarNavRadioButtonStyle}"/>
                         <RadioButton GroupName="MainNavigation"
                                      Tag="4"
-                                     Content="Ajustes"
+                                     Content="Inicio de Windows"
                                      Checked="NavigationButton_Checked"
                                      Style="{StaticResource SidebarNavRadioButtonStyle}"/>
                         <RadioButton GroupName="MainNavigation"
                                      Tag="5"
-                                     Content="Diagnóstico"
+                                     Content="Aplicaciones"
+                                     Checked="NavigationButton_Checked"
+                                     Style="{StaticResource SidebarNavRadioButtonStyle}"/>
+                        <RadioButton GroupName="MainNavigation"
+                                     Tag="6"
+                                     Content="Ajustes seguros"
+                                     Checked="NavigationButton_Checked"
+                                     Style="{StaticResource SidebarNavRadioButtonStyle}"/>
+                        <RadioButton GroupName="MainNavigation"
+                                     Tag="7"
+                                     Content="Registro técnico"
                                      Checked="NavigationButton_Checked"
                                      Style="{StaticResource SidebarNavRadioButtonStyle}"/>
                     </StackPanel>
@@ -137,152 +147,211 @@
                     <ContentPresenter ContentSource="SelectedContent"/>
                 </ControlTemplate>
             </TabControl.Template>
-            <TabItem Header="Inicio">
+            <TabItem Header="Resumen">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel>
-                        <UniformGrid x:Name="MetricsGrid" Columns="4" Margin="8">
+                    <StackPanel Margin="4">
+                        <TextBlock Text="Resumen del equipo"
+                                   Margin="8,4,8,2"
+                                   FontSize="22"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="Estado general y acceso rápido a las funciones principales."
+                                   Margin="8,0,8,12"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource MutedForegroundBrush}"/>
+
+                        <UniformGrid x:Name="MetricsGrid"
+                                     Columns="4"
+                                     Margin="4,0,4,10">
                             <Border BorderBrush="{DynamicResource BorderBrush}"
                                     Background="{DynamicResource SurfaceBrush}"
                                     BorderThickness="1"
-                                    CornerRadius="8"
-                                    Padding="12"
+                                    CornerRadius="10"
+                                    Padding="14"
                                     Margin="4">
                                 <StackPanel>
-                                    <TextBlock Text="CPU" Foreground="{DynamicResource MutedForegroundBrush}"/>
-                                    <TextBlock x:Name="CpuText" Text="-- %" FontSize="25" FontWeight="SemiBold"/>
+                                    <TextBlock Text="CPU"
+                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
+                                    <TextBlock x:Name="CpuText"
+                                               Text="-- %"
+                                               Margin="0,4,0,0"
+                                               FontSize="25"
+                                               FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Border>
                             <Border BorderBrush="{DynamicResource BorderBrush}"
                                     Background="{DynamicResource SurfaceBrush}"
                                     BorderThickness="1"
-                                    CornerRadius="8"
-                                    Padding="12"
+                                    CornerRadius="10"
+                                    Padding="14"
                                     Margin="4">
                                 <StackPanel>
-                                    <TextBlock Text="RAM" Foreground="{DynamicResource MutedForegroundBrush}"/>
-                                    <TextBlock x:Name="RamText" Text="-- %" FontSize="25" FontWeight="SemiBold"/>
+                                    <TextBlock Text="RAM"
+                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
+                                    <TextBlock x:Name="RamText"
+                                               Text="-- %"
+                                               Margin="0,4,0,0"
+                                               FontSize="25"
+                                               FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Border>
                             <Border BorderBrush="{DynamicResource BorderBrush}"
                                     Background="{DynamicResource SurfaceBrush}"
                                     BorderThickness="1"
-                                    CornerRadius="8"
-                                    Padding="12"
+                                    CornerRadius="10"
+                                    Padding="14"
                                     Margin="4">
                                 <StackPanel>
-                                    <TextBlock Text="RAM usada" Foreground="{DynamicResource MutedForegroundBrush}"/>
-                                    <TextBlock x:Name="RamGbText" Text="-- GB" FontSize="25" FontWeight="SemiBold"/>
+                                    <TextBlock Text="RAM usada"
+                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
+                                    <TextBlock x:Name="RamGbText"
+                                               Text="-- GB"
+                                               Margin="0,4,0,0"
+                                               FontSize="25"
+                                               FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Border>
                             <Border BorderBrush="{DynamicResource BorderBrush}"
                                     Background="{DynamicResource SurfaceBrush}"
                                     BorderThickness="1"
-                                    CornerRadius="8"
-                                    Padding="12"
+                                    CornerRadius="10"
+                                    Padding="14"
                                     Margin="4">
                                 <StackPanel>
-                                    <TextBlock Text="Procesos" Foreground="{DynamicResource MutedForegroundBrush}"/>
-                                    <TextBlock x:Name="ProcessText" Text="--" FontSize="25" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Procesos"
+                                               Foreground="{DynamicResource MutedForegroundBrush}"/>
+                                    <TextBlock x:Name="ProcessText"
+                                               Text="--"
+                                               Margin="0,4,0,0"
+                                               FontSize="25"
+                                               FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Border>
                         </UniformGrid>
 
-                        <Border Margin="8"
-                                Padding="16"
-                                CornerRadius="8"
+                        <Border Margin="8,0,8,10"
+                                Padding="18"
+                                CornerRadius="10"
                                 Background="{DynamicResource SurfaceBrush}"
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock Text="Estado del equipo"
-                                           FontSize="18"
-                                           FontWeight="SemiBold"/>
-                                <TextBlock x:Name="SmartAnalysisText"
-                                           Margin="0,6,0,0"
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource MutedForegroundBrush}"
-                                           Text="Analizando los componentes que pueden optimizarse sin quitar funciones…"/>
-                                <WrapPanel Margin="0,12,0,0">
-                                    <Button Content="Analizar ahora"
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0"
+                                            Margin="0,0,18,0">
+                                    <TextBlock Text="Estado del equipo"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="SmartAnalysisText"
+                                               Margin="0,7,0,0"
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource MutedForegroundBrush}"
+                                               Text="Analizando los componentes que pueden optimizarse sin quitar funciones…"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1"
+                                            VerticalAlignment="Center">
+                                    <Button Content="Analizar"
                                             Click="AnalyzeComputer_Click"/>
                                     <Button Content="Crear reporte"
                                             Click="ExportDiagnostic_Click"/>
-                                </WrapPanel>
-                            </StackPanel>
+                                </StackPanel>
+                            </Grid>
                         </Border>
 
-                        <Border Margin="8"
-                                Padding="16"
-                                CornerRadius="8"
-                                Background="{DynamicResource SurfaceBrush}"
-                                BorderBrush="{DynamicResource BorderBrush}"
-                                BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock Text="Focus Boost"
-                                           FontSize="18"
-                                           FontWeight="SemiBold"/>
-                                <TextBlock x:Name="FocusBoostStatusText"
-                                           Margin="0,5,0,0"
-                                           Text="Focus Boost inactivo"
-                                           TextWrapping="Wrap"/>
-                                <TextBlock Margin="0,4,0,8"
-                                           Foreground="{DynamicResource MutedForegroundBrush}"
-                                           TextWrapping="Wrap"
-                                           Text="Da prioridad moderada a una aplicación y reduce temporalmente la prioridad de sincronizadores conocidos. Nunca usa prioridad Alta/Tiempo real ni modifica procesos críticos."/>
-
-                                <WrapPanel Margin="0,0,0,8">
-                                    <Button Content="Actualizar procesos"
-                                            Click="RefreshFocusProcesses_Click"/>
-                                    <Button Content="Iniciar Focus Boost"
-                                            Click="StartFocusBoost_Click"/>
-                                    <Button Content="Detener y restaurar"
-                                            Click="StopFocusBoost_Click"/>
-                                    <Button Content="Abrir Mini Focus"
-                                            Click="OpenMiniFocus_Click"/>
-                                    <Button Content="Hotkeys"
-                                            Click="OpenAgentSettings_Click"/>
-                                </WrapPanel>
-
-                                <DataGrid x:Name="FocusProcessGrid"
-                                          Height="190"
-                                          AutoGenerateColumns="False"
-                                          IsReadOnly="True"
-                                          CanUserAddRows="False"
-                                          SelectionMode="Single"
-                                          AlternationCount="2">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Proceso"
-                                                            Binding="{Binding DisplayName}"
-                                                            Width="*"/>
-                                        <DataGridTextColumn Header="PID"
-                                                            Binding="{Binding Pid}"
-                                                            Width="70"/>
-                                        <DataGridTextColumn Header="RAM"
-                                                            Binding="{Binding WorkingSetMb, StringFormat={}{0:N0} MB}"
-                                                            Width="95"/>
-                                        <DataGridTextColumn Header="Prioridad"
-                                                            Binding="{Binding Priority}"
-                                                            Width="115"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Margin="8"
-                                Padding="16"
-                                CornerRadius="8"
+                        <Border Margin="8,0,8,8"
+                                Padding="14"
+                                CornerRadius="10"
                                 Background="{DynamicResource SurfaceAltBrush}"
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1">
                             <TextBlock TextWrapping="Wrap"
-                                       Text="La optimización prioriza mantener funciones disponibles. Los cambios automáticos están limitados a un catálogo local validado y siempre conservan una ruta de restauración."/>
+                                       Foreground="{DynamicResource MutedForegroundBrush}"
+                                       Text="Los cambios automáticos están limitados a acciones conocidas y reversibles. Para mejorar rendimiento temporal usa Focus Boost; para cambios permanentes usa Optimización."/>
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="Optimizar">
+            <TabItem Header="Focus Boost">
+                <Grid Margin="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            Padding="18"
+                            Margin="0,0,0,12"
+                            CornerRadius="10"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="Focus Boost"
+                                       FontSize="22"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock x:Name="FocusBoostStatusText"
+                                       Margin="0,6,0,0"
+                                       Text="Focus Boost inactivo"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       Foreground="{DynamicResource MutedForegroundBrush}"
+                                       TextWrapping="Wrap"
+                                       Text="Da prioridad moderada a una aplicación mientras la usas y restaura el estado al terminar. No usa prioridad Alta/Tiempo real ni modifica procesos críticos."/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1"
+                            Padding="12"
+                            Margin="0,0,0,12"
+                            CornerRadius="10"
+                            Background="{DynamicResource SurfaceAltBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1">
+                        <WrapPanel>
+                            <Button Content="Actualizar lista"
+                                    Click="RefreshFocusProcesses_Click"/>
+                            <Button Content="Iniciar"
+                                    Click="StartFocusBoost_Click"/>
+                            <Button Content="Detener y restaurar"
+                                    Click="StopFocusBoost_Click"/>
+                            <Button Content="Mini Focus"
+                                    Click="OpenMiniFocus_Click"/>
+                            <Button Content="Atajos de teclado"
+                                    Click="OpenAgentSettings_Click"/>
+                        </WrapPanel>
+                    </Border>
+
+                    <DataGrid Grid.Row="2"
+                              x:Name="FocusProcessGrid"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              SelectionMode="Single"
+                              AlternationCount="2">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Aplicación / proceso"
+                                                Binding="{Binding DisplayName}"
+                                                Width="*"/>
+                            <DataGridTextColumn Header="PID"
+                                                Binding="{Binding Pid}"
+                                                Width="80"/>
+                            <DataGridTextColumn Header="RAM"
+                                                Binding="{Binding WorkingSetMb, StringFormat={}{0:N0} MB}"
+                                                Width="110"/>
+                            <DataGridTextColumn Header="Prioridad actual"
+                                                Binding="{Binding Priority}"
+                                                Width="140"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Optimización">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -854,7 +923,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Ajustes">
+            <TabItem Header="Ajustes seguros">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -971,7 +1040,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Diagnóstico">
+            <TabItem Header="Registro técnico">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
