@@ -82,7 +82,7 @@ public sealed class SmartOptimizationService
             Category = "Mantenimiento",
             Status = enabledTaskCount == 0
                 ? "No encontramos actividades conocidas del fabricante activas."
-                : $"{enabledTaskCount} actividades Acer siguen disponibles.",
+                : $"{enabledTaskCount} actividades conocidas del fabricante siguen disponibles.",
             Action =
                 "Se conservan sin cambios para no quitar funciones. " +
                 "La optimización inteligente no las desactiva.",
