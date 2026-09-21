@@ -2122,3 +2122,56 @@ La publicación distribuible debe:
 - incluir instrucciones genéricas;
 - poder comprimirse como ZIP portable;
 - indicar claramente el sistema/arquitectura soportados.
+
+
+## 37.13 Correspondencia exacta entre navegación y contenido
+
+Cada elemento visible de navegación debe abrir exactamente la sección que su nombre describe.
+
+Regla obligatoria:
+
+- no confiar en índices implícitos después de insertar/reordenar tabs;
+- validar el mapa completo navegación -> índice -> contenido;
+- si existe un TabItem funcional, debe estar representado correctamente en la navegación o permanecer intencionalmente oculto;
+- no permitir desplazamientos donde "Aplicaciones" abra "Inicio de Windows" o equivalentes.
+
+Nombres preferidos para esta app:
+
+- Resumen;
+- Optimización;
+- Focus Boost;
+- Virtualización;
+- Inicio de Windows;
+- Programas instalados;
+- Ajustes de Windows;
+- Registro técnico.
+
+## 37.14 Densidad de información
+
+Una pantalla no debe mostrar simultáneamente todo lo avanzado.
+
+Mantener visible:
+
+- propósito;
+- estado actual;
+- acción primaria;
+- contenido principal.
+
+Mover a Expanders cuando sea secundario:
+
+- IA opcional;
+- Autoruns;
+- limpieza avanzada;
+- riesgo/reversión detallados;
+- información técnica;
+- herramientas externas.
+
+Evitar más de 3 acciones primarias juntas cuando no sean necesarias.
+
+Preferir:
+
+- una pantalla = una tarea principal;
+- espaciado de 10–16 DIPs entre bloques;
+- headers claros;
+- tablas con espacio suficiente;
+- ScrollViewer vertical antes que compactar contenido hasta hacerlo ilegible.
