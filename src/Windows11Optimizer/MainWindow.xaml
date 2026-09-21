@@ -306,7 +306,7 @@
                             <TextBlock Margin="0,5,0,0"
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource MutedForegroundBrush}"
-                                       Text="El motor local solo aplica acciones conocidas, reversibles y aprobadas. La IA puede recomendar IDs del mismo catálogo, pero nunca ejecuta cambios por sí sola."/>
+                                       Text="Empieza con el examen local: no necesita Internet ni API. La IA es opcional y solo puede recomendar acciones que ya existen en el catálogo seguro de la app."/>
                         </StackPanel>
                     </Border>
 
@@ -328,10 +328,10 @@
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource MutedForegroundBrush}"/>
                             <WrapPanel Margin="0,10,0,0">
-                                <Button Content="Analizar localmente"
+                                <Button Content="Examen local"
                                         Click="AnalyzeOptimization_Click"/>
                                 <Button x:Name="ApplySmartOptimizationButton"
-                                        Content="Aplicar recomendaciones locales"
+                                        Content="Aplicar cambios seguros"
                                         Click="ApplySmartOptimization_Click"
                                         IsEnabled="False"/>
                                 <Button Content="Deshacer cambios"
@@ -376,17 +376,17 @@
 
                             <DockPanel Grid.Row="0" Margin="0,0,0,8">
                                 <StackPanel DockPanel.Dock="Left">
-                                    <TextBlock Text="Examen con IA"
+                                    <TextBlock Text="Análisis con IA (opcional)"
                                                FontSize="17"
                                                FontWeight="SemiBold"/>
                                     <TextBlock x:Name="AiExamStatusText"
                                                Margin="0,3,0,0"
                                                TextWrapping="Wrap"
                                                Foreground="{DynamicResource MutedForegroundBrush}"
-                                               Text="La IA recomienda; el motor local decide qué acciones existen y puede aplicar."/>
+                                               Text="Requiere una clave API con saldo. Si OpenAI no está disponible, la app usa el examen local y no aplica nada automáticamente."/>
                                 </StackPanel>
                                 <Button DockPanel.Dock="Right"
-                                        Content="Ejecutar examen con IA"
+                                        Content="Mejorar con IA"
                                         Click="RunAiExam_Click"/>
                             </DockPanel>
 
