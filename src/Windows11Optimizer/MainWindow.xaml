@@ -57,8 +57,87 @@
                               Margin="0,0,0,8"
                               HorizontalAlignment="Stretch"/>
 
-        <TabControl Grid.Row="2">
-            <TabItem Header="Panel">
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="NavigationColumn" Width="188"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Margin="0,0,10,0"
+                    Padding="10"
+                    CornerRadius="12"
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1">
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Text="Secciones"
+                                   Margin="8,4,8,8"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource MutedForegroundBrush}"/>
+
+                        <RadioButton x:Name="NavHome"
+                                     GroupName="MainNavigation"
+                                     Tag="0"
+                                     Content="Inicio"
+                                     IsChecked="True"
+                                     Checked="NavigationButton_Checked"
+                                     Style="{StaticResource SidebarNavRadioButtonStyle}"/>
+                        <RadioButton GroupName="MainNavigation"
+                                     Tag="1"
+                                     Content="Optimizar"
+                                     Checked="NavigationButton_Checked"
+                                     Style="{StaticResource SidebarNavRadioButtonStyle}"/>
+                        <RadioButton GroupName="MainNavigation"
+                                     Tag="2"
+                                     Content="Virtualización"
+                                     Checked="NavigationButton_Checked"
+                                     Style="{StaticResource SidebarNavRadioButtonStyle}"/>
+                        <RadioButton GroupName="MainNavigation"
+                                     Tag="3"
+                                     Content="Aplicaciones"
+                                     Checked="NavigationButton_Checked"
+                                     Style="{StaticResource SidebarNavRadioButtonStyle}"/>
+                        <RadioButton GroupName="MainNavigation"
+                                     Tag="4"
+                                     Content="Ajustes"
+                                     Checked="NavigationButton_Checked"
+                                     Style="{StaticResource SidebarNavRadioButtonStyle}"/>
+                        <RadioButton GroupName="MainNavigation"
+                                     Tag="5"
+                                     Content="Diagnóstico"
+                                     Checked="NavigationButton_Checked"
+                                     Style="{StaticResource SidebarNavRadioButtonStyle}"/>
+                    </StackPanel>
+
+                    <StackPanel DockPanel.Dock="Bottom"
+                                VerticalAlignment="Bottom"
+                                Margin="4,12,4,4">
+                        <Button Content="Mini Focus"
+                                Click="OpenMiniFocus_Click"
+                                HorizontalAlignment="Stretch"/>
+                        <TextBlock Text="Cambios reversibles · IA opcional"
+                                   Margin="6,8,6,0"
+                                   TextWrapping="Wrap"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource MutedForegroundBrush}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <TabControl x:Name="MainTabs"
+                    Grid.Column="1"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    SelectedIndex="0">
+            <TabControl.Template>
+                <ControlTemplate TargetType="TabControl">
+                    <ContentPresenter ContentSource="SelectedContent"/>
+                </ControlTemplate>
+            </TabControl.Template>
+            <TabItem Header="Inicio">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
@@ -203,7 +282,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="Optimización">
+            <TabItem Header="Optimizar">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -365,7 +444,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Máquinas virtuales">
+            <TabItem Header="Virtualización">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="8">
@@ -892,7 +971,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Detalles técnicos">
+            <TabItem Header="Diagnóstico">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -912,6 +991,7 @@
                 </Grid>
             </TabItem>
         </TabControl>
+        </Grid>
 
         <Border Grid.Row="3"
                 Margin="0,8,0,0"
