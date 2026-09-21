@@ -139,18 +139,16 @@
                                      Style="{StaticResource SidebarNavRadioButtonStyle}"/>
                     </StackPanel>
 
-                    <StackPanel DockPanel.Dock="Bottom"
-                                VerticalAlignment="Bottom"
-                                Margin="4,12,4,4">
-                        <Button Content="Mini Focus"
-                                Click="OpenMiniFocus_Click"
-                                HorizontalAlignment="Stretch"/>
+                    <Border DockPanel.Dock="Bottom"
+                            Margin="4,14,4,4"
+                            Padding="8"
+                            CornerRadius="8"
+                            Background="{DynamicResource SurfaceAltBrush}">
                         <TextBlock Text="Cambios reversibles · IA opcional"
-                                   Margin="6,8,6,0"
                                    TextWrapping="Wrap"
                                    FontSize="11"
                                    Foreground="{DynamicResource MutedForegroundBrush}"/>
-                    </StackPanel>
+                    </Border>
                 </DockPanel>
             </Border>
 
