@@ -127,6 +127,23 @@ public partial class MainWindow : Window
             ActivityKind.Success);
     }
 
+    private void NavigationButton_Checked(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (sender is not RadioButton button ||
+            button.Tag is not string rawIndex ||
+            !int.TryParse(rawIndex, out var index))
+        {
+            return;
+        }
+
+        if (MainTabs is null)
+            return;
+
+        MainTabs.SelectedIndex = index;
+    }
+
     private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         ApplyResponsiveLayout();
@@ -141,6 +158,9 @@ public partial class MainWindow : Window
 
         MetricsGrid.Columns = compact ? 2 : 4;
         VirtualizationStatusGrid.Columns = compact ? 1 : 2;
+        NavigationColumn.Width = compact
+            ? new GridLength(148)
+            : new GridLength(188);
         ActivityProgress.Width = compact ? 120 : 180;
     }
 
@@ -227,18 +247,88 @@ public partial class MainWindow : Window
                 "La IA terminó de recomendar. Ningún cambio se aplicó automáticamente.",
                 ActivityKind.Success);
         }
+        catch (OpenAiApiException ex) when (ex.IsQuotaOrCreditsError)
+        {
+            Log(
+                $"Examen con IA sin saldo disponible: HTTP {ex.StatusCode} | {ex.Message}");
+
+            await RunLocalExamFallbackAsync(
+                "La clave de OpenAI funciona, pero esta cuenta de API no tiene saldo disponible. " +
+                "Se ejecutó el examen local seguro en su lugar.");
+
+            ShowToast(
+                "La IA no tiene saldo disponible. Usamos el examen local sin aplicar cambios.",
+                ActivityKind.Warning);
+        }
+        catch (OpenAiApiException ex) when (ex.IsRateLimitError)
+        {
+            Log(
+                $"Límite temporal de OpenAI: HTTP {ex.StatusCode} | {ex.Message}");
+
+            await RunLocalExamFallbackAsync(
+                "OpenAI está limitando temporalmente las solicitudes. " +
+                "Se ejecutó el examen local seguro en su lugar.");
+
+            ShowToast(
+                "OpenAI está ocupado. Usamos el examen local por ahora.",
+                ActivityKind.Warning);
+        }
+        catch (OpenAiApiException ex)
+        {
+            Log(
+                $"Error de API en examen con IA: HTTP {ex.StatusCode} | {ex.Message}");
+
+            AiExamStatusText.Text =
+                "No se pudo usar la IA. El análisis local sigue disponible y no depende de la API.";
+
+            EndActivity(
+                "IA no disponible",
+                ex.Message,
+                ActivityKind.Warning);
+
+            ShowToast(
+                "La IA no está disponible. Puedes seguir usando el análisis local.",
+                ActivityKind.Warning);
+        }
         catch (Exception ex)
         {
             Log($"Error en examen con IA: {ex.Message}");
-            AiExamStatusText.Text = ex.Message;
+
+            AiExamStatusText.Text =
+                "No se pudo completar el examen con IA. El análisis local sigue disponible.";
+
             EndActivity(
                 "No se pudo completar el examen con IA",
                 ex.Message,
                 ActivityKind.Error);
+
             ShowToast(
-                "No se pudo completar el examen con IA.",
+                "No se pudo usar la IA. El resto de la app sigue funcionando.",
                 ActivityKind.Error);
         }
+    }
+
+    private async Task RunLocalExamFallbackAsync(string reason)
+    {
+        var plan = await _smartOptimizer.AnalyzeAsync();
+
+        _lastOptimizationPlan = plan;
+        OptimizationPlanGrid.ItemsSource = plan.Opportunities;
+        SmartOptimizationSummaryText.Text = plan.Summary;
+        ApplySmartOptimizationButton.IsEnabled = plan.ApplicableCount > 0;
+
+        AiRecommendationGrid.ItemsSource = Array.Empty<AiRecommendationRow>();
+        AiRecommendationDetailText.Text =
+            "El examen local no necesita API y solo usa reglas internas validadas.";
+
+        AiExamStatusText.Text =
+            reason + Environment.NewLine +
+            "La IA es opcional; no se aplicó ningún cambio automáticamente.";
+
+        EndActivity(
+            "Examen local completado",
+            plan.Summary,
+            ActivityKind.Success);
     }
 
     private void AiRecommendationGrid_SelectionChanged(
