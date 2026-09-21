@@ -118,7 +118,7 @@
                                      Style="{StaticResource SidebarNavRadioButtonStyle}"/>
                         <RadioButton GroupName="MainNavigation"
                                      Tag="5"
-                                     Content="Aplicaciones"
+                                     Content="Programas instalados"
                                      Checked="NavigationButton_Checked"
                                      Style="{StaticResource SidebarNavRadioButtonStyle}"/>
 
@@ -129,7 +129,7 @@
                                    Foreground="{DynamicResource MutedForegroundBrush}"/>
                         <RadioButton GroupName="MainNavigation"
                                      Tag="6"
-                                     Content="Ajustes seguros"
+                                     Content="Ajustes de Windows"
                                      Checked="NavigationButton_Checked"
                                      Style="{StaticResource SidebarNavRadioButtonStyle}"/>
                         <RadioButton GroupName="MainNavigation"
@@ -678,7 +678,7 @@
             </TabItem>
 
             <TabItem x:Name="StartupTab" Header="Inicio de Windows">
-                <Grid Margin="8">
+                <Grid Margin="12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -686,35 +686,39 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Margin="0,0,0,8">
-                        <TextBlock FontWeight="SemiBold"
-                                   Text="Programas que se abren con Windows"/>
-                        <TextBlock Margin="0,3,0,5"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource MutedForegroundBrush}"
-                                   Text="La app intenta comprobar si el programa de cada entrada todavía existe. Si una aplicación fue desinstalada pero dejó una referencia antigua, aparecerá como entrada huérfana."/>
-                        <WrapPanel>
-                            <Button Content="Actualizar lista"
-                                    Click="RefreshStartup_Click"/>
-                            <Button Content="Administrar en Windows"
-                                    Click="OpenStartupSettings_Click"/>
-                            <Button Content="No iniciar con Windows"
-                                    Click="DisableStartupEntry_Click"
-                                    ToolTip="Retira de forma reversible la entrada seleccionada del inicio. No desinstala ni borra el programa."/>
-                            <Button Content="Quitar entrada huérfana"
-                                    Click="RemoveOrphanedStartup_Click"
-                                    ToolTip="Solo elimina la referencia de inicio seleccionada cuando el archivo del programa ya no existe."/>
-                            <Button x:Name="RestoreStartupEntryButton"
-                                    Content="Restaurar último cambio"
-                                    Click="RestoreStartupEntry_Click"
-                                    IsEnabled="False"/>
-                        </WrapPanel>
-                    </StackPanel>
+                    <Border Grid.Row="0"
+                            Padding="16"
+                            Margin="0,0,0,10"
+                            CornerRadius="10"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="Programas al iniciar Windows"
+                                       FontSize="22"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Margin="0,5,0,0"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource MutedForegroundBrush}"
+                                       Text="Revisa qué programas se abren automáticamente. La app no desinstala nada desde esta pantalla."/>
+                            <WrapPanel Margin="0,12,0,0">
+                                <Button Content="Actualizar"
+                                        Click="RefreshStartup_Click"/>
+                                <Button Content="No iniciar con Windows"
+                                        Click="DisableStartupEntry_Click"
+                                        ToolTip="Retira de forma reversible la entrada seleccionada del inicio. No desinstala ni borra el programa."/>
+                                <Button x:Name="RestoreStartupEntryButton"
+                                        Content="Restaurar último cambio"
+                                        Click="RestoreStartupEntry_Click"
+                                        IsEnabled="False"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
 
                     <Border Grid.Row="1"
-                            Padding="9"
-                            Margin="0,0,0,8"
-                            CornerRadius="7"
+                            Padding="10"
+                            Margin="0,0,0,10"
+                            CornerRadius="8"
                             Background="{DynamicResource SurfaceAltBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1">
@@ -743,7 +747,7 @@
                             </ContextMenu>
                         </DataGrid.ContextMenu>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Nombre"
+                            <DataGridTextColumn Header="Programa"
                                                 Binding="{Binding Name}"
                                                 Width="210"/>
                             <DataGridTextColumn Header="Estado"
@@ -751,56 +755,68 @@
                                                 Width="220"/>
                             <DataGridTextColumn Header="Origen"
                                                 Binding="{Binding Source}"
-                                                Width="190"/>
-                            <DataGridTextColumn Header="Programa detectado"
+                                                Width="180"/>
+                            <DataGridTextColumn Header="Ruta detectada"
                                                 Binding="{Binding TargetDisplay}"
                                                 Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <Expander Grid.Row="3"
-                              Header="Análisis avanzado con Microsoft Autoruns"
-                              Margin="0,8,0,0">
-                        <StackPanel>
-                            <TextBlock x:Name="AutorunsStatusText"
-                                       Margin="4"
-                                       TextWrapping="Wrap"
-                                       Text="Comprobando si Autoruns está disponible…"/>
-                            <WrapPanel>
-                                <Button Content="Analizar con Autoruns"
-                                        Click="AnalyzeAutoruns_Click"/>
-                                <Button Content="Abrir / obtener Autoruns"
-                                        Click="OpenAutoruns_Click"/>
+                    <StackPanel Grid.Row="3"
+                                Margin="0,10,0,0">
+                        <Expander Header="Opciones adicionales"
+                                  Margin="0,0,0,6">
+                            <WrapPanel Margin="8,6">
+                                <Button Content="Abrir configuración de Inicio"
+                                        Click="OpenStartupSettings_Click"/>
+                                <Button Content="Quitar referencia huérfana"
+                                        Click="RemoveOrphanedStartup_Click"
+                                        ToolTip="Solo elimina la referencia de inicio seleccionada cuando el archivo del programa ya no existe."/>
                             </WrapPanel>
-                            <DataGrid x:Name="AutorunsFindingsGrid"
-                                      Height="180"
-                                      Margin="4,6,4,0"
-                                      AutoGenerateColumns="False"
-                                      IsReadOnly="True"
-                                      CanUserAddRows="False"
-                                      AlternationCount="2">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Entrada"
-                                                        Binding="{Binding NameDisplay}"
-                                                        Width="220"/>
-                                    <DataGridTextColumn Header="Estado"
-                                                        Binding="{Binding StatusDisplay}"
-                                                        Width="160"/>
-                                    <DataGridTextColumn Header="Tipo"
-                                                        Binding="{Binding SourceDisplay}"
-                                                        Width="170"/>
-                                    <DataGridTextColumn Header="Programa"
-                                                        Binding="{Binding ImagePath}"
-                                                        Width="*"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </StackPanel>
-                    </Expander>
+                        </Expander>
+
+                        <Expander Header="Microsoft Autoruns (avanzado)">
+                            <StackPanel Margin="8,6">
+                                <TextBlock x:Name="AutorunsStatusText"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"
+                                           Text="Comprobando si Autoruns está disponible…"/>
+                                <WrapPanel Margin="0,8,0,0">
+                                    <Button Content="Analizar con Autoruns"
+                                            Click="AnalyzeAutoruns_Click"/>
+                                    <Button Content="Abrir / obtener Autoruns"
+                                            Click="OpenAutoruns_Click"/>
+                                </WrapPanel>
+                                <DataGrid x:Name="AutorunsFindingsGrid"
+                                          Height="180"
+                                          Margin="0,8,0,0"
+                                          AutoGenerateColumns="False"
+                                          IsReadOnly="True"
+                                          CanUserAddRows="False"
+                                          AlternationCount="2">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Entrada"
+                                                            Binding="{Binding NameDisplay}"
+                                                            Width="220"/>
+                                        <DataGridTextColumn Header="Estado"
+                                                            Binding="{Binding StatusDisplay}"
+                                                            Width="160"/>
+                                        <DataGridTextColumn Header="Tipo"
+                                                            Binding="{Binding SourceDisplay}"
+                                                            Width="170"/>
+                                        <DataGridTextColumn Header="Programa"
+                                                            Binding="{Binding ImagePath}"
+                                                            Width="*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Aplicaciones">
-                <Grid Margin="8">
+            <TabItem Header="Programas instalados">
+                <Grid Margin="12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -809,32 +825,26 @@
                     </Grid.RowDefinitions>
 
                     <Border Grid.Row="0"
-                            Padding="14"
-                            Margin="0,0,0,8"
-                            CornerRadius="8"
+                            Padding="16"
+                            Margin="0,0,0,10"
+                            CornerRadius="10"
                             Background="{DynamicResource SurfaceBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1">
                         <StackPanel>
-                            <TextBlock Text="Aplicaciones instaladas"
-                                       FontSize="18"
+                            <TextBlock Text="Programas instalados"
+                                       FontSize="22"
                                        FontWeight="SemiBold"/>
                             <TextBlock x:Name="InstalledAppsSummaryText"
-                                       Margin="0,4,0,0"
+                                       Margin="0,5,0,0"
                                        Text="Cargando aplicaciones…"
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource MutedForegroundBrush}"/>
-                            <WrapPanel Margin="0,10,0,0">
+                            <WrapPanel Margin="0,12,0,0">
                                 <Button Content="Actualizar"
                                         Click="RefreshInstalledApps_Click"/>
                                 <Button Content="Desinstalar seleccionada"
                                         Click="UninstallSelectedApp_Click"/>
-                                <Button Content="Abrir ubicación"
-                                        Click="OpenSelectedAppLocation_Click"/>
-                                <Button Content="Explicar con IA"
-                                        Click="ExplainSelectedAppWithAi_Click"/>
-                                <Button Content="Configuración de Windows"
-                                        Click="OpenAppsSettings_Click"/>
                             </WrapPanel>
                         </StackPanel>
                     </Border>
@@ -848,7 +858,7 @@
                               SelectionChanged="InstalledAppsGrid_SelectionChanged"
                               AlternationCount="2">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Aplicación"
+                            <DataGridTextColumn Header="Programa"
                                                 Binding="{Binding DisplayName}"
                                                 Width="*"/>
                             <DataGridTextColumn Header="Versión"
@@ -861,35 +871,49 @@
                     </DataGrid>
 
                     <Border Grid.Row="2"
-                            Padding="12"
-                            Margin="0,8,0,0"
-                            CornerRadius="8"
+                            Padding="14"
+                            Margin="0,10,0,0"
+                            CornerRadius="10"
                             Background="{DynamicResource SurfaceAltBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1">
                         <StackPanel>
                             <TextBlock x:Name="SelectedAppDetailText"
-                                       Text="Selecciona una aplicación para ver sus datos."
+                                       Text="Selecciona un programa para ver sus datos."
                                        TextWrapping="Wrap"/>
-                            <TextBlock x:Name="AppAiExplanationText"
-                                       Margin="0,8,0,0"
-                                       TextWrapping="Wrap"
-                                       Foreground="{DynamicResource MutedForegroundBrush}"
-                                       Text="La explicación con IA usa únicamente nombre, versión y editor."/>
+                            <WrapPanel Margin="0,10,0,0">
+                                <Button Content="Abrir ubicación"
+                                        Click="OpenSelectedAppLocation_Click"/>
+                                <Button Content="Configuración de Windows"
+                                        Click="OpenAppsSettings_Click"/>
+                            </WrapPanel>
+
+                            <Expander Header="Explicación con IA (opcional)"
+                                      Margin="0,8,0,0">
+                                <StackPanel Margin="8,6">
+                                    <Button Content="Explicar programa"
+                                            HorizontalAlignment="Left"
+                                            Click="ExplainSelectedAppWithAi_Click"/>
+                                    <TextBlock x:Name="AppAiExplanationText"
+                                               Margin="0,8,0,0"
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource MutedForegroundBrush}"
+                                               Text="La explicación con IA usa únicamente nombre, versión y editor."/>
+                                </StackPanel>
+                            </Expander>
                         </StackPanel>
                     </Border>
 
                     <Expander Grid.Row="3"
-                              Header="Residuos confirmados de inicio"
-                              Margin="0,8,0,0">
-                        <StackPanel>
+                              Header="Referencias antiguas de inicio"
+                              Margin="0,10,0,0">
+                        <StackPanel Margin="8,6">
                             <TextBlock x:Name="ResidueSummaryText"
-                                       Margin="4"
                                        Text="Analizando referencias antiguas…"
                                        TextWrapping="Wrap"/>
                             <DataGrid x:Name="ResidueGrid"
                                       Height="150"
-                                      Margin="4"
+                                      Margin="0,8,0,0"
                                       AutoGenerateColumns="False"
                                       IsReadOnly="True"
                                       CanUserAddRows="False"
@@ -907,10 +931,10 @@
                                                         Width="*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
-                            <WrapPanel>
-                                <Button Content="Quitar referencia seleccionada"
+                            <WrapPanel Margin="0,8,0,0">
+                                <Button Content="Quitar referencia"
                                         Click="RemoveSelectedResidue_Click"/>
-                                <Button Content="Restaurar última referencia"
+                                <Button Content="Restaurar última"
                                         Click="RestoreResidue_Click"/>
                             </WrapPanel>
                         </StackPanel>
@@ -918,44 +942,34 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Ajustes seguros">
-                <Grid Margin="8">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+            <TabItem Header="Ajustes de Windows">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="12">
+                        <Border Padding="16"
+                                Margin="0,0,0,10"
+                                CornerRadius="10"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="Ajustes de Windows"
+                                           FontSize="22"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock Margin="0,5,0,0"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"
+                                           Text="Solo aparecen ajustes sencillos que la app puede aplicar y deshacer de forma directa."/>
+                                <TextBlock x:Name="WinUtilStatusText"
+                                           Margin="0,8,0,0"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"
+                                           Text="Cargando ajustes…"/>
+                            </StackPanel>
+                        </Border>
 
-                    <Border Grid.Row="0"
-                            Padding="14"
-                            Margin="0,0,0,8"
-                            CornerRadius="8"
-                            Background="{DynamicResource SurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="Ajustes sencillos"
-                                       FontSize="18"
-                                       FontWeight="SemiBold"/>
-                            <TextBlock Margin="0,5,0,0"
-                                       TextWrapping="Wrap"
-                                       Foreground="{DynamicResource MutedForegroundBrush}"
-                                       Text="Solo se muestran opciones que Windows11Optimizer puede aplicar y deshacer directamente. Las opciones complejas del catálogo de WinUtil ya no aparecen en la interfaz."/>
-                            <TextBlock x:Name="WinUtilStatusText"
-                                       Margin="0,8,0,0"
-                                       Foreground="{DynamicResource MutedForegroundBrush}"
-                                       Text="Cargando ajustes…"/>
-                        </StackPanel>
-                    </Border>
-
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*"/>
-                            <ColumnDefinition Width="3*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <DataGrid Grid.Column="0"
-                                  x:Name="WinUtilGrid"
-                                  Margin="0,0,8,0"
+                        <DataGrid x:Name="WinUtilGrid"
+                                  Height="220"
+                                  Margin="0,0,0,10"
                                   AutoGenerateColumns="False"
                                   IsReadOnly="True"
                                   CanUserAddRows="False"
@@ -963,22 +977,21 @@
                                   SelectionChanged="WinUtilGrid_SelectionChanged"
                                   AlternationCount="2">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Ajuste"
+                                <DataGridTextColumn Header="Ajuste disponible"
                                                     Binding="{Binding Content}"
                                                     Width="*"/>
                             </DataGrid.Columns>
                         </DataGrid>
 
-                        <Border Grid.Column="1"
-                                Padding="16"
-                                CornerRadius="8"
+                        <Border Padding="16"
+                                CornerRadius="10"
                                 Background="{DynamicResource SurfaceBrush}"
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1">
                             <StackPanel>
                                 <TextBlock x:Name="WinUtilSelectedTitleText"
                                            Text="Selecciona un ajuste"
-                                           FontSize="20"
+                                           FontSize="19"
                                            FontWeight="SemiBold"
                                            TextWrapping="Wrap"/>
                                 <TextBlock x:Name="WinUtilSelectedStateText"
@@ -988,7 +1001,7 @@
                                            Text="Sin seleccionar"/>
 
                                 <TextBlock Text="Qué hace"
-                                           Margin="0,18,0,4"
+                                           Margin="0,14,0,4"
                                            FontWeight="SemiBold"/>
                                 <TextBlock x:Name="WinUtilSelectedDescriptionText"
                                            Text="Selecciona un ajuste para ver una explicación sencilla."
@@ -996,30 +1009,34 @@
                                            Foreground="{DynamicResource MutedForegroundBrush}"/>
 
                                 <TextBlock Text="Qué cambia"
-                                           Margin="0,18,0,4"
+                                           Margin="0,14,0,4"
                                            FontWeight="SemiBold"/>
                                 <TextBlock x:Name="WinUtilSelectedImpactText"
                                            Text="No se realizará ningún cambio hasta que pulses Aplicar."
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource MutedForegroundBrush}"/>
 
-                                <TextBlock Text="Riesgo"
-                                           Margin="0,16,0,4"
-                                           FontWeight="SemiBold"/>
-                                <TextBlock x:Name="WinUtilSelectedRiskText"
-                                           Text="Muy bajo"
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource MutedForegroundBrush}"/>
+                                <Expander Header="Riesgo y cómo deshacerlo"
+                                          Margin="0,12,0,0">
+                                    <StackPanel Margin="8,6">
+                                        <TextBlock Text="Riesgo"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="WinUtilSelectedRiskText"
+                                                   Margin="0,3,0,10"
+                                                   Text="Muy bajo"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource MutedForegroundBrush}"/>
+                                        <TextBlock Text="Cómo se deshace"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="WinUtilSelectedRevertText"
+                                                   Margin="0,3,0,0"
+                                                   Text="La app guarda el valor anterior antes de aplicar."
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource MutedForegroundBrush}"/>
+                                    </StackPanel>
+                                </Expander>
 
-                                <TextBlock Text="Cómo se deshace"
-                                           Margin="0,16,0,4"
-                                           FontWeight="SemiBold"/>
-                                <TextBlock x:Name="WinUtilSelectedRevertText"
-                                           Text="La app guarda el valor anterior antes de aplicar."
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource MutedForegroundBrush}"/>
-
-                                <WrapPanel Margin="0,16,0,0">
+                                <WrapPanel Margin="0,14,0,0">
                                     <Button x:Name="WinUtilApplyButton"
                                             Content="Aplicar"
                                             Click="ApplySelectedWinUtil_Click"
@@ -1031,8 +1048,8 @@
                                 </WrapPanel>
                             </StackPanel>
                         </Border>
-                    </Grid>
-                </Grid>
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
 
             <TabItem Header="Registro técnico">
