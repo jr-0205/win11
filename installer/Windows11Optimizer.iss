@@ -1,6 +1,6 @@
 #define MyAppName "Windows 11 Optimizer"
 #define MyAppExeName "Windows11Optimizer.exe"
-#define MyAppVersion "0.8.2"
+#define MyAppVersion "0.9.0"
 #define MyAppPublisher "jr-0205"
 
 [Setup]
@@ -18,6 +18,7 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
+MinVersion=10.0.22000
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
